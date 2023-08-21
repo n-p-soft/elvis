@@ -1,71 +1,17 @@
 #!/bin/sh
 
-# TEMPORARY: There is a problem with the Gnome interface.  Gnome should be
-# omitted by default until this is resolved.  Giving an explicit "--with-gnome"
-# flag should still enable it, though.  The bug that I'm encountering is that
-# the -lgnorba library contains unresolved references to "gnome_init" and
-# "gnome_init_with_popt_table".  This started showing up after I upgraded my
-# computer from SuSE 6.3 to SuSE 7.0.
-GUI_GNOME=bug
-
 # This is a UNIX shell script that generates a custom "Makefile" file and
 # a "config.h" file.
-#
-# usage: configure [[flags] system]
-#
-# flags: --with-x[=no]		enable/disable support for X-windows interface
-#	 --without-x		disable support for X-windows interface
-#	 --with-xft[=no]	enable/disable support for Xft under "x11" intf.
-#	 --without-xft		disable support for Xft under "x11" interface
-#	 --with-gnome[=no]	enable/disable support for GNOME interface
-#	 --without-gnome	disable support for GNOME interface
-#	 --with-gcc[=no]	enable/disable use of GCC
-#	 --without-gcc		disable use of GCC
-#	 --x-includes=DIR	add DIR to path for X-windows include files
-#	 --x-libraries=DIR	add DIR to path for X-windows libraries
-#        --libs=STRING		define the non-X11 part of the LIBS= line
-#	 --bindir=DIR		where to install the executables
-#	 --datadir=DIR		where to install the supporting data files
-#	 --docdir=DIR		where to install the :help files & other docs
-#	 --prefix=DIR		like --bindir=DIR/bin --datadir=DIR/lib/elvis
-#	 --ioctl=VARIETY	type of tty ioctl to use: termios, termio, sgtty
-#	 --verbose		explain each decision
-#
-# system: *one* of the following...
-#	 linux			UNIX clone for IBM clones
-#	 sunos			Sun's Ancient SunOS variant of BSD
-#	 solaris		Sun's OLDER Solaris systems
-#	 solaris2		Sun's NEWER Solaris 2 systems
-#	 aix			IBM's variant of POSIX
-#	 osf-1			DEC's variant of POSIX
-#	 ultrix			DEC's variant of BSD
-#	 hp-ux			HP's variant of POSIX
-#	 qnx4			QNX's POSIXish real-time operating system
-#	 qnx6			QNX's neutrino, variant of POSIXish real-time OS
-#	 irix			SGI's variant of POSIX
-#	 xenix			ancient SCO Xenix-386 systems
-#	 sco			SCO UNIX or Open Desktop systems
-#	 bsd			typical BSD implementations
-#	 freebsd		FreeBSD is a specific BSD implementation
-#	 openbsd		OpenBSD is a specific BSD implementation
-#	 netbsd			NetBSD is a specific BSD implementation
-#	 posix			generic POSIX implementations
-#	 cygwin			GNU utilities under Windows95/98/NT
-#        (anything else)	generic UNIX, including SysV
-# If no system is specified, this script will attempt to obtain the system
-# type by running the "uname" command.  If it can't recognize the system name
-# returned by "uname", then it uses generic UNIX settings.  The script also
-# inspects the files on your system to refine those settings, so it'll still
-# work okay, usually.
 
 # Set some defaults
-XINCPATH="/usr/X11R6/include /usr/X11/include /usr/include /usr/include/X11 /usr/local/X11/include /usr/openwin/include"
-XLIBPATH="/lib /usr/lib /usr/X11/lib /usr/local/X11/lib /usr/openwin/lib /usr/X11R6/lib /usr/ucblib /usr/ccs/lib /usr/local/lib "`echo "$LD_LIBRARY_PATH" | tr ':' ' '`
+XINCPATH="/usr/include"
+XLIBPATH="/lib /usr/lib /usr/local/lib "`echo "$LD_LIBRARY_PATH" | tr ':' ' '`
 GNUPATH=`echo "$PATH" | tr ':' ' '`
 PREFIX=/usr
 BINDIR='$(PREFIX)/bin'
 DATADIR='$(PREFIX)/share/elvis/'
 DOCDIR='$(PREFIX)/share/elvis/doc/'
+MANDIR='$(PREFIX)/share/man/man1'
 SYS=""
 DEFAULT_CC="cc -O"
 IOCTL=""
@@ -75,18 +21,6 @@ WHY=""
 args=""
 XLIBS=""
 NLIBS=""
-
-# Ultrix has a broken /bin/sh; it doesn't support shell functions.  Try to be
-# clever about running bash instead of /bin/sh there.
-if [ "$SYS" = ultrix ]
-then
-	case "$0" in
-	  *configure)
-		(echo set - "$@"; cat configure) | bash
-		exit 0
-		;;
-	esac
-fi
 
 # This function echoes its arguments, but only if the --verbose flag is given
 why()
@@ -117,26 +51,15 @@ searchpath()
 # This function outputs a usage message, and then exits
 usage()
 {
-	echo "usage: configure [[flags] system]"
-	echo "flags: --with-x[=no]      enable/disable support for X-windows interface"
-	echo "       --without-x        disable support for X-windows interface"
-	echo "       --with-xft[=no]    enable/disable support for Xft under 'x11' intf."
-	echo "       --without-xft      disable support for Xft under 'x11' interface"
-	echo "       --with-gnome[=no]  enable/disable support for GNOME interface"
-	echo "       --without-gnome    disable support for GNOME interface"
-	echo "       --with-gcc[=no]    enable/disable use of GCC"
-	echo "       --without-gcc      disable use of GCC"
-	echo "       --x-includes=DIR   add DIR to path for X-windows include files"
-	echo "       --x-libraries=DIR  add DIR to path for X-windows libraries"
+	echo "usage: configure [options]"
 	echo "       --bindir=DIR       where to install the executables"
 	echo "       --datadir=DIR      where to install the supporting data files"
 	echo "       --prefix=DIR       like --bindir=DIR/bin --datadir=DIR/share/elvis"
+	echo "       --docdir=DIR       where to install documentation"
+	echo "       --mandir=DIR       where to install man pages"
 	echo "       --libs=STRING      non-X11 part of the LIBS= string in Makefile"
-	echo "       --ioctl=VARIETY    type of tty ioctl to use: termios, termio, or sgtty"
+	echo "       --ioctl=VARIETY    type of tty ioctl to use: termios, termio"
 	echo "       --verbose          explain any decisions made during configuration"
-	echo "system: linux, sunos, solaris, solaris2, freebsd, openbsd, netbsd, bsd,"
-	echo "        posix, aix, osf-1, hp-ux, ultrix, qnx, irix, cygwin, xenix,"
-	echo "        sco (meaning SCO Unix or OpenDesktop)"
 	echo "The default prefix is --prefix=$PREFIX"
 	if [ "$*" ]
 	then
@@ -149,48 +72,6 @@ usage()
 for i
 do
 	case "$i" in
-	  --with-gnome=no|--without-gnome)
-		GUI_GNOME=undef
-		args="$args --with-gnome=no"
-		;;
-	  --with-gnome*)
-		GUI_GNOME=define
-		args="$args --with-gnome"
-		;;
-	  --with-x=no|--without-x)
-		GUI_X11=undef
-		args="$args --with-x=no"
-		;;
-	  --with-x*)
-		GUI_X11=define
-		args="$args --with-x"
-		;;
-	  --with-xft=no|--without-xft)
-		FEATURE_XFT=undef
-		args="$args --with-xft=no"
-		;;
-	  --with-xft*)
-		FEATURE_XFT=define
-		args="$args --with-xft"
-		;;
-	  --with-gcc=no|--without-gcc)
-		gnu=n
-		forcegcc=n
-		args="$args --with-gcc=no"
-		;;
-	  --with-gcc*)
-		gnu=y
-		forcegcc=y
-		args="$args --with-gcc"
-		;;
-	  --x-includes=*)
-		XINCPATH=`echo "$i"|sed 's/^--x-includes=//'`" $XINCPATH"
-		args="$args $i"
-		;;
-	  --x-libraries=*)
-		XLIBPATH=`echo "$i"|sed 's/^--x-libraries=//'`" $XLIBPATH"
-		args="$args $i"
-		;;
 	  --bindir=*)
 		BINDIR=`echo "$i"|sed 's/^--bindir=//'`
 		args="$args $i"
@@ -203,6 +84,10 @@ do
 		DOCDIR=`echo "$i"|sed 's/^--docdir=//'`
 		args="$args $i"
 		;;
+	  --mandir=*)
+		MANDIR=`echo "$i"|sed 's/^--mandir=//'`
+		args="$args $i"
+		;;
 	  --prefix=*)
 		PREFIX=`echo "$i"|sed 's/^--prefix=//'`
 		args="$args $i"
@@ -211,12 +96,12 @@ do
 		LIBS=`echo "$i"|sed 's/^--libs=//'`
 		# added to args later
 		;;
-	  --ioctl=termios|--ioctl=termio|--ioctl=sgtty)
+	  --ioctl=termios|--ioctl=termio)
 		IOCTL=`echo "$i"|sed 's/^--ioctl=//'`
 		args="$args $i"
 		;;
 	  --ioctl=*)
-		usage "bad --ioctl value; must be termios, termio, or sgtty"
+		usage "bad --ioctl value; must be termios, termio"
 		;;
 	  --verbose)
 		WHY=y
@@ -235,142 +120,29 @@ do
 	  -*)
 		usage invalid option $i
 		;;
-	  *)
-		SYS="$i"
-		;;
 	esac
 done
 
-# If no system specified, then guess by examining output of uname
-if [ "$SYS" = "" ]
-then
-	why "No system type was specified, so I'm running uname(1) to guess it..."
-	SYS=`uname | tr '[A-Z]' '[a-z]'`
-	why "   Apparently this is '$SYS'"
-
-	case "$SYS" in
-	  sunos)
-		# Solaris 2 masquerades as SunOS.  Check for that, by examining
-		# the release number.
-		why "   I know '$SYS'"
-		why "   Solaris claims to be SunOS, but it requires a different configuration."
-		why "   I'm checking the release number to distinguish between them..."
-		case `uname -r` in
-		  [5-9]*)	SYS=solaris2	;;
-		esac
-		why "   This is really '$SYS'"
+case "$(uname)" in
+	*Linux*) SYS=linux ;;
+	*FreeBSD*) SYS=freebsd ;;
+	*OpenBSD*) SYS=openbsd ;;
+	*NetBSD*) SYS=netbsd ;;
+	*BSD*) SYS=bsd ;;
+	*) 
+		why "operating system not supported"
+		exit 1
 		;;
-
-	  qnx*)
-		case `uname -r` in
-		  6*)	why "   QNX Neutrino -- QNX's multiplatform POSIX Realtime platform"
-			SYS=qnx6 ;;
-		  *)	why "   QNX 4.?? -- QNX's X86 almost POSIX Realtime OS"
-			SYS=qnx4 ;;
-		esac
-		;;
-
-	  linux|solaris|solaris2|aix|osf-1|ultrix|hp-ux|irix*|xenix|sco|bsd|freebsd|openbsd|netbsd|posix|cygwin*)
-		why "   I know '$SYS' -- This should be easy!"
-		;;
-
-	  *)
-		# SCO likes to change the OS name to match the system name.
-		# Inspect the files to guess whether that's the case here.
-		if [ -f /etc/hwconfig ]
-		then
-			if [ -f /unix ]
-			then
-				sys2=sco
-			else
-				sys2=xenix
-			fi
-			why "   I don't know '$SYS' but I know '$sys2' and this looks like '$sys2' to me"
-			SYS=$sys2
-		else
-			why "   I don't know '$SYS' so I'll treat this like generic Unix"
-		fi
-	esac
-fi
+esac
 
 # Try to locate some files
 why "Looking for some compiler files..."
 inet=`searchpath netinet/in.h $XINCPATH`
 case "$inet" in
-  "") why "   Internet headers not found - maybe need '--x-includes=...' argument?" ;;
+  "") why "   Internet headers not found" ;;
   *) why "   Internet headers found" ;;
 esac
 
-# Find Gnome files, unless gnome is specifically omitted
-case "$GUI_GNOME" in
-  undef)
-	why "   Skipping GNOME tests since you specified --with-gnome=no"
-	;;
-  bug)
-	why "   Skipping GNOME due to a temporary configuration bug.  (For more information,"
-	why "      see the comment at the top of the 'configure' script)"
-	GUI_GNOME=undef
-	;;
-  *)
-	GNOMELIBSSEARCH="gnomeui zvt gnome libglade gnorba"
-	for LIBSEARCHTMP in $GNOMELIBSSEARCH
-	do
-		res=`gnome-config --libs $LIBSEARCHTMP`
-		retcode=$?
-		if [ $retcode -ne 0 ]
-		then
-			why "  gnome-config failed to find $LIBSEARCHTMP"
-			why "  You should be able to get it from www.gnome.org"
-			break
-		fi
-	done
-
-	gnomelibs=`gnome-config --libs $GNOMELIBSSEARCH 2>/dev/null`
-	gnomeres1=$?
-	gnomecflags=`gnome-config --cflags $GNOMELIBSSEARCH 2>/dev/null`
-	gnomeres2=$?
-
-	if [ $gnomeres1 -ne 0 -o $gnomeres2 -ne 0 -o $retcode -ne 0 -o "$gnomelibs" = "" -o "$gnomecflags" = "" ]
-	then
-		why "   gnome-config not happy - perhaps you are missing some gnomes?"
-		why "   ($gnomeres1 / $gnomeres2 / $retcode / $gnomelibs / $gnomecflags )"
-		gnomelibs=""
-		gnomecflags=""
-	else
-		why "   GNOME found -- omitting gdk_imlib; it causes more trouble that it's worth"
-		gnomelibs="`echo $gnomelibs | sed 's/ -lgdk_imlib / /'`"
-		gnomecflags="$gnomecflags -I."
-		echo '#ifndef GDK_IMLIB_H' >gdk_imlib.h
-		echo '# define GDK_IMLIB_H' >>gdk_imlib.h
-		echo 'typedef char GdkImlibColor;' >>gdk_imlib.h
-		echo 'typedef char GdkImlibImage;' >>gdk_imlib.h
-		echo '#endif' >>gdk_imlib.h
-	fi
-
-esac
-
-case "$GUI_X11" in
-  undef)
-	why "   Skipping X11 tests since you specified --with-x=no"
-	;;
-
-  *)
-	xinc=`searchpath X11/Xresource.h $XINCPATH`
-	case "$xinc" in
-		"") why "   X11 headers not found - maybe need '--x-includes=...' argument?" ;;
-		*) why "   X11 headers found" ;;
-	esac
-	xlib=`searchpath libX11.a $XLIBPATH`
-	if [ "$xlib" = "" ]
-	then
-		xlib=`searchpath libX11.so $XLIBPATH`
-	fi
-	case "$xlib" in
-		"") why "   X11 libraries not found - maybe need '--x-libraries=...' argument?" ;;
-		*) why "   X11 libraries found" ;;
-	esac
-	;;
-esac
 case "$CC" in
   "")	CC="$DEFAULT_CC"
 	case "$gnu" in
@@ -389,78 +161,6 @@ case "$CC" in
 esac
 case "$gnu" in
  y|n)	gnu="" ;;
-esac
-
-# If GNOME is unspecified, and the GNOME check was OK then assume with-gnome
-if [ "$GUI_GNOME" = "" -a "$gnomelibs" ]
-then
-  why "Assuming --with-gnome because you have GNOME installed"
-  GUI_GNOME=define
-  args="$args --with-gnome"
-elif [ "$GUI_GNOME" = "" ]
-then
-  why "Assuming --with-gnome=no because GNOME was not found"
-  GUI_GNOME=undef
-  args="$args --with-gnome=no"
-fi
-
-# If X-windows is unspecified, and the X files are present, then assume with-x
-if [ "$GUI_X11" = "" -a "$xinc" ]
-then
-	why "Assuming --with-x because X11 headers were found"
-	GUI_X11=define
-	args="$args --with-x"
-elif [ "$GUI_X11" = "" ]
-then
-	why "Assuming --with-x=no because X11 headers were not found"
-	GUI_X11=undef
-	args="$args --with-x=no"
-fi
-
-# If X-windows is used, then check for the -lXpm library, need for FEATURE_IMAGE
-if [ "$GUI_X11" = "define" -a "$FEATURE_IMAGE" = "" ]
-then
-	if [ "`searchpath libXpm.a $XLIBPATH`" = "" ]
-	then
-		why "   Disabling the use of background images since -lXpm wasn't found"
-		FEATURE_IMAGE=undef
-	elif [ "`searchpath X11/xpm.h $XINCPATH`" = "" ]
-	then
-		why "   Disabling the use of background images since <X11/xpm.h> wasn't found"
-		FEATURE_IMAGE=undef
-	else
-		why "   Enabling the use of background images since -lXpm and <X11/xpm.h> were found"
-		FEATURE_IMAGE=define
-	fi
-fi
-# If X-windows is *NOT* used, then force off FEATURE_IMAGE
-if [ "$GUI_X11" \!= "define" ]
-then
-	FEATURE_IMAGE=undef
-fi
-
-case "$FEATURE_XFT" in
-  undef)
-	why "   Skipping Xft tests since you specified --with-xft=no"
-	;;
-
-  *)
-	if [ "$GUI_X11" = "define" ]
-	then
-		xft_h=`searchpath X11/Xft/Xft.h $XINCPATH`
-		libxft=`searchpath libXft.a $XLIBPATH`
-		if [ "$xft_h" = "" -o "$libxft" = "" ]
-		then
-			why "   Xft not found"
-			FEATURE_XFT=undef
-		else
-			why "   Xft found -- elvis will use it"
-			FEATURE_XFT=define
-		fi
-	else
-		why "   Skipping Xft tests since X11 isn't configured"
-	fi
-	;;
 esac
 
 # if network protocols are unspecified, and the network header files are
@@ -580,11 +280,7 @@ fi
 if [ "$PROTOCOL_HTTP" = define -o "$PROTOCOL_FTP" = define ]
 then
 	why "Does this system support inet_aton()?"
-	if [ "$SYS" = sunos -o "$SYS" = solaris -o "$SYS" = solaris2 ]
-	then
-		why "   Assuming no, because this is a Sun system."
-		NEED_INET_ATON=define
-	elif fgrep inet_aton /usr/include/arpa/inet.h </dev/null >/dev/null
+	if fgrep inet_aton /usr/include/arpa/inet.h </dev/null >/dev/null
 	then
 		why "   Assuming yes, because it is declared in <arpa/inet.h>"
 		NEED_INET_ATON=undef
@@ -616,7 +312,6 @@ fi
 case "$IOCTL" in
   termios)	USE=			;;
   termio)	USE=" -DUSE_TERMIO"	;;
-  sgtty)	USE=" -DUSE_SGTTY"	;;
   *)
 	why "Choosing a type of ioctl() calls, since no --ioctl=... argument was given"
 	if [ -f /usr/include/termios.h ]
@@ -630,21 +325,12 @@ case "$IOCTL" in
 			USE=" -DUSE_TERMIO"
 			args="$args --ioctl=termio"
 			why "   Assuming --ioctl=termio because <termio.h> exists"
-		else
-			USE=" -DUSE_SGTTY"
-			args="$args --ioctl=sgtty"
-			why "   Assuming --ioctl=sgtty because neither <termio.h> nor <termios.h> exists"
 		fi
 	fi
 	;;
 esac
 case "$SYS" in
-  *aix*)
-	why "AIX always uses curses because the termcap database has no entry for xterm"
-	TLIBS="-lcurses"
-	;;
-
-  *linux*)
+  linux)
 	if [ ! -f /usr/lib/libtermcap.a -a ! -f /lib/libtermcap.a ]
 	then
 		if [ -f /usr/lib/libncurses.a -o -f /usr/lib/ncurses.a ]
@@ -665,185 +351,15 @@ case "$SYS" in
 	fi
 	;;
 
-  *qnx4*)
-	CC="cc -D_POSIX_SOURCE"
-	gnu=""
-	TLIBS="-ltermcap -lsocket"
-	;;
-
-  *qnx6*)
-	CC="qcc"
-	gnu=""
-	TLIBS="-ltermcap -lsocket"
-	;;
-
-  *osf*)
-	why "OSF is configured to use the bogus 'tinytcap.c' file instead of a real termcap"
-	why "    or terminfo library.  I don't know why.   It also tries to use -ltermcap"
-	why "    which doesn't make much sense here either.  You may want to change this."
-	NEED_TGETENT=define
-	#TLIBS="-lucb -lcurses"
-	TLIBS="-ltermcap"
-	;;
-
-  *ultrix*)
-	why "Ultrix needs -ldnet to support X11.  Also, it uses both -lcurses and -ltermcap"
-	why "   though I can't imagine why it would need both; elvis doesn't use any fancy"
-	why "   curses functions.  You may want to change this."
-	CC="cc -std"
-	NEED_STRDUP=define
-	TLIBS="-lcurses -ltermcap"
-	if [ "$GUI_X11" = "define" ]
-	then
-		XLIBS=" -ldnet"
-	fi
-	;;
-
-  *hp-ux*)
-	why "HP-UX must use its own compiler even if GCC is available, apparently because"
-	why "   GCC doesn't support shared libraries.  Also, it uses both -lcurses and"
-	why "   -ltermcap, though I can't imagine why it would need both."
-	if [ X$forcegcc = Xy ]
-	then
-		why "... but since you used an explicit -with-gcc flag, I'll do that"
-	else
-		CC="cc -Ae +O2"
-		gnu=""
-	fi
-	NEED_OSPEED=define
-	TLIBS="-lcurses -ltermcap"
-	;;
-
-  *solaris2*)
-	why "For Solaris2, the standard system C compiler chokes on some standard system"
-	why "   header files because of an unchecked 'const' keyword, so we add '-Dconst='"
-	why "   to ensure that 'const' is ignored.  Also, if X11 is to be supported then"
-	why "   we also need -lsocket -lnsl.  A -R flag may also be added so the X11"
-	why "   shared libraries can be found at run time."
-	CC="cc -O -Dconst="
-	TLIBS="-lcurses"
-	NLIBS="$NLIBS -lsocket -lnsl"
-	if [ "$GUI_X11" = "define" ]
-	then
-		xlibdir=`dirname "$xlib"`
-		XLIBS=" -R$xlibdir$XLIBS"
-	fi
-	if [ -f /usr/ccs/lib/libtermcap.a ]
-	then
-		why "For Solaris2, -ltermcap is usually not necessary but since you have one and"
-		why "   it is harmless, I'll add it."
-		TLIBS="$TLIBS -ltermcap"
-	fi
-	;;
-
-  *solaris*)
-	why "For Solaris 1, no really wacky tricks are needed.  A -Dconst= flag is added"
-	why "   to the compiler command to allow it to work around a 'const' keyword in a"
-	why "   standard system header."
-	CC="cc -O -Dconst="
-	TLIBS="-L/usr/ucblib -lucb -lcurses -ltermcap"
-	;;
-
-  *sunos*)
-	why "For ancient SunOS, no really wacky tricks are needed.  A -Dconst= flag is added"
-	why "   to the compiler command to allow it to work around a 'const' keyword in a"
-	why "   standard system header."
-	CC="cc -O -Dconst="
-	TLIBS="-ltermcap"
-	;;
-
-  *sco*)
-	TLIBS="-lx -ltermcap"
-	tmp=`searchpath icc $GNUPATH`
-	if [ "$tmp" ]
-	then
-		why "For SCO, I like the icc compiler (unless gcc is available)."
-		CC="icc"
-		# but it may be overridden by gcc
-	fi
-	if [ "$GUI_X11" = "define" ]
-	then
-		why "For SCO, X11 requires -lsocket"
-		XLIBS=" -lsocket"
-		why "SCO has an <X11/Xos.h>, but it clashes with <times.h> so we leave it out"
-		NEED_XOS_H="undef"
-	elif [ X"$inet" != X ]
-	then
-		why "For SCO, any network access needs -lsocket"
-		TLIBS="$TLIBS -lsocket"
-	fi
-	;;
-
-  *xenix*)
-	TLIBS="-lx -ltermcap"
-	if [ "$GUI_X11" = "define" ]
-	then
-		why "For SCO Xenix, X11 requires -lsocket"
-		XLIBS=" -lsocket"
-	fi
-	;;
-
-  *freebsd*)
-	why "For FreeBSD, we ignore the <sys/select.h> file"
+  freebsd|bsd)
+	why "For BSD, we ignore the <sys/select.h> file"
 	NEED_SELECT_H="undef"
-	who "   To support X11, it also requires -lipc"
-	XLIBS=" -lipc"
 	;;
 
   *openbsd*)
 	why "For OpenBSD, we ignore the <sys/select.h> file"
 	NEED_SELECT_H="undef"
 	TLIBS="-lcurses"
-	who "   To support X11, it also requires -lipc"
-	XLIBS=" -lipc"
-	;;
-
-  *netbsd*)
-	why "For NetBSD, we need to specify the -R flag for X11."
-	why "   The use of LD_LIBRARY_PATH is not encouraged unless it is really necessary."
-	if [ "$GUI_X11" = "define" ]
-	then
-		xlibdir=`dirname "$xlib"`
-		XLIBS=" -R$xlibdir$XLIBS"
-	fi
-	;;
-
-  *bsd*)
-	why "For BSD we like to use shlicc2 because it supports shared libraries"
-	tmp=`searchpath shlicc2 $GNUPATH`
-	if [ "$tmp" ]
-	then
-		CC="shlicc2"
-		gnu=""
-		why "   Using shlicc2, even in preference to GCC"
-	else
-		why "   Apparently shlicc2 doesn't exist on this system"
-	fi
-	if [ "$GUI_X11" = "define" ]
-	then
-		why "Some BSD versions require -lipc with X11, but some don't allow it.  Checking..."
-		tmp=`searchpath libipc.a $XLIBPATH`
-		if [ "$tmp" ]
-		then
-			why "   This BSD has a -lipc library, so I'll use it"
-			XLIBS=" -lipc"
-		else
-			why "   Couldn't find -lipc library.  Hopefully that means it isn't needed"
-		fi
-		why "FreeBSD requires -I/usr/X11R6/include.  Should be harmless for other BSDs"
-		CC="$CC -I/usr/X11R6/include"
-	fi
-	;;
-
-  *irix*)
-  	# If "cc" in installed, use it in preference to "gcc"
-	why "For IRIX, the standard CC is preferable to GCC"
-	tmp=`searchpath cc $GNUPATH`
-	if [ "$tmp" ]
-	then
-		CC="cc"
-		gnu=""
-	fi
 	;;
 
   *cygwin*)
@@ -886,56 +402,12 @@ echo "Compiler: $CC"
 echo "Bin dir:  "`echo "$BINDIR" |sed s,'$(PREFIX)',"$PREFIX",`
 echo "Data dir: "`echo "$DATADIR"|sed s,'$(PREFIX)',"$PREFIX",`
 echo "Doc dir:  "`echo "$DOCDIR" |sed s,'$(PREFIX)',"$PREFIX",`
-echo "Man dir:  "`sh instman.sh -d -p"${PREFIX}"`
-[ "$WHY" ] || echo "To see details, run \"configure --verbose\""
+echo "Man dir:  "`echo "$MANDIR" |sed s,'$(PREFIX)',"$PREFIX",`
 
 ################################################################################
 
 #Set some options that'll be used in the here-files below
 CC="$CC$USE"
-if [ "$GUI_GNOME" = "define" ]
-then
-  GNOMELIBS="$gnomelibs"
-  GNOMECFLAGS="$gnomecflags"
-
-  CC="$CC $GNOMECFLAGS"
-fi
-
-if [ "$GUI_X11" = "define" ]
-then
-	case "$FEATURE_XFT" in
-	  define)
-		xft="-lXft "
-		if [ -d /usr/include/freetype2 ]
-		then
-			CC="$CC -I/usr/include/freetype2"
-		fi
-		;;
-	  *)	
-		xft=""
-		;;
-	esac
-	case "$FEATURE_IMAGE" in
-	  define)	xpm="-lXpm "	;;
-	  *)		xpm=""		;;
-	esac
-	case "$xlib" in
-	  /lib/libX11.*|/usr/lib/libX11.*|"")
-		XLIBS="$xft$xpm-lX11$XLIBS"
-		;;
-	  *)
-		XLIBS="-L`dirname $xlib` $xft$xpm-lX11$XLIBS"
-		;;
-	esac
-	case "$xinc" in
-	  /usr/include/X11/Xresource.h)
-		;;
-	  *)
-		x11subdir=`dirname $xinc`
-		CC="$CC -I"`dirname $x11subdir`
-		;;
-	esac
-fi
 if [ "$LIBS" = "" ]
 then
 	LIBS="${TLIBS:--ltermcap} $NLIBS"
@@ -952,10 +424,7 @@ esac
 # Generate the "config.h" file
 ELVISPATH=`echo "~/.elvis:/etc/elvis:$DATADIR:$DOCDIR" | sed s,'$(DATADIR)',"$DATADIR",g\;s,'$(PREFIX)',"$PREFIX",g`
 cat >config.h <<eof-config
-/* config.h */
-
-/* Originally, this file was automatically generated by the "configure"
- * shell script.
+/* config.h
  *
  * This file contains C macro definitions which indicate which features
  * are to be supported, and which library functions are to be emulated.
@@ -965,8 +434,8 @@ cat >config.h <<eof-config
 
 
 /* The following determine which user interfaces are to be supported */
-#${GUI_GNOME:-undef}	GUI_GNOME	/* Pretty GNOME user interface */
-#${GUI_X11:-undef}	GUI_X11		/* simple X-windows interface */
+#undef	GUI_GNOME	/* Pretty GNOME user interface */
+#undef	GUI_X11		/* simple X-windows interface */
 #undef	GUI_CURSES	/* curses interface */
 #define	GUI_TERMCAP	/* termcap interface */
 #define	GUI_OPEN	/* open-mode only, does nothing fancy */
@@ -997,7 +466,7 @@ cat >config.h <<eof-config
 #define	FEATURE_G	/* most of the visual 'g' commands */
 #define	FEATURE_HLOBJECT /* the hlobject and hllayers options */
 #define	FEATURE_HLSEARCH  /* the hlsearch option */
-#${FEATURE_IMAGE:-undef}	FEATURE_IMAGE	/* background images in x11 */
+#undef	FEATURE_IMAGE	/* background images in x11 */
 #define	FEATURE_INCSEARCH /* the incsearch option */
 #define	FEATURE_LISTCHARS /* the "listchars" option */
 #define	FEATURE_LITRE	/* accelerate searches for literal strings */
@@ -1019,7 +488,7 @@ cat >config.h <<eof-config
 #define	FEATURE_TAGS	/* :tag command -- undef'ing will break ref & ctags */
 #define	FEATURE_TEXTOBJ	/* text objects */
 #define	FEATURE_V	/* the v/V/^V marking commands */
-#${FEATURE_XFT:-undef}	FEATURE_XFT	/* support antialiased fonts in "x11" */
+#undef	FEATURE_XFT	/* support antialiased fonts in "x11" */
 
 /* The FEATURE_CALC option, above, controls whether the calculator and all of
  * the features that depend on it should be included in elvis.  You almost
@@ -1102,60 +571,11 @@ eof-config
 tmp=mfsed.$$
 case "$SYS" in
 
-*sunos*)
-cat >$tmp <<eof-sunos
-s!^# Makefile.in\$!# Makefile - configured for $SYS!
-s!^CC=.*!CC=$CC -DUSE_SGTTY!
-eof-sunos
-;;
-
-*solaris*)
-cat >$tmp <<eof-solaris
-s!^# Makefile.in\$!# Makefile - configured for $SYS!
-s!^CC=.*!CC=$CC!
-eof-solaris
-;;
-
-*osf*)
-cat >$tmp <<eof-osf
-s!^# Makefile.in\$!# Makefile - configured for $SYS!
-s!^CC=.*!CC=$CC!
-eof-osf
-;;
-
-*ultrix*)
-cat >$tmp <<eof-ultrix
-s!^# Makefile.in\$!# Makefile - configured for $SYS!
-s!^CC=.*!CC=$CC!
-eof-ultrix
-;;
-
-*hp-ux*)
-cat >$tmp <<eof-hp-ux
-s!^# Makefile.in\$!# Makefile - configured for $SYS!
-s!^CC=.*!CC=$CC!
-eof-hp-ux
-;;
-
-*linux*)
+linux)
 cat >$tmp <<eof-linux
 s!^# Makefile.in\$!# Makefile - configured for $SYS!
 s!^CC=.*!CC=$CC!
 eof-linux
-;;
-
-*sco*)
-cat >$tmp <<eof-sco
-s!^# Makefile.in\$!# Makefile - configured for $SYS!
-s!^CC=.*!CC=$CC!
-eof-sco
-;;
-
-*xenix*)
-cat >$tmp <<eof-xenix
-s!^# Makefile.in\$!# Makefile - configured for $SYS!
-s!^CC=.*!CC=$CC!
-eof-xenix
 ;;
 
 *bsd*)
@@ -1163,27 +583,6 @@ cat >$tmp <<eof-bsd
 s!^# Makefile.in\$!# Makefile - configured for $SYS!
 s!^CC=.*!CC=$CC!
 eof-bsd
-;;
-
-*qnx4*)
-cat >$tmp <<eof-qnx4
-s!^# Makefile.in\$!# Makefile - configured for $SYS!
-s!^CC=.*!CC=$CC!
-eof-qnx4
-;;
-
-*qnx6*)
-cat >$tmp <<eof-qnx6
-s!^# Makefile.in\$!# Makefile - configured for $SYS!
-s!^CC=.*!CC=$CC!
-eof-qnx6
-;;
-
-*aix*)
-cat >$tmp <<eof-aix
-s!^# Makefile.in\$!# Makefile - configured for $SYS!
-s!^CC=.*!CC=$CC -D_BSD!
-eof-aix
 ;;
 
 *)
@@ -1200,60 +599,9 @@ s!^PREFIX=.*!PREFIX=$PREFIX!
 s!^BINDIR=.*!BINDIR=$BINDIR!
 s!^DATADIR=.*!DATADIR=$DATADIR!
 s!^DOCDIR=.*!DOCDIR=$DOCDIR!
+s!^MANDIR=.*!MANDIR=$MANDIR!
 eof-all
-if [ -d /usr/local/X11/include ]
-then
-	echo 's!^CFLAGS=.*!& -I/usr/local/X11/include!' >>$tmp
-fi
-
-# Remove the source/object for GNOME from the makefile if we aren't using it
-if [ "$GUI_GNOME" != "define" ]
-then
-cat >> $tmp << eof-gnome
-s!^GNOMESRCS=.*!GNOMESRCS=!
-s!^GNOMEOBJS=.*!GNOMEOBJS=!
-eof-gnome
-fi
 
 # Run "Makefile.in" through that sed script, to produce "Makefile"
 sed -f $tmp Makefile.in >Makefile && rm $tmp
 
-# Some parting advice
-case "$SYS" in
-  *solaris*|*sunos*)
-	if [ "$GUI_X11" = "define" -a "$WHY" = y ]
-	then
-		xlibdir=`dirname "$xlib"`
-		case "$LD_LIBRARY_PATH" in
-		  *X11*|*openwin*)
-			# Probably do nothing
-			;;
-		  "")
-			# set path = xlibdir
-			echo "You *may* need to..."
-			echo
-			case "$SHELL" in
-			  *csh)
-			  	echo "     setenv LD_LIBRARY_PATH=$xlibdir"
-				;;
-			  *)
-				echo "     LD_LIBRARY_PATH=$xlibdir"
-				echo "     export LD_LIBRARY_PATH"
-				;;
-			esac
-			echo
-			echo "... before you can run elvis, but try running it without doing that first."
-			;;
-		  *)
-			# add xlibdir to path
-			echo "You may need to..."
-			echo
-			echo "     LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$xlibdir"
-			echo "     export LD_LIBRARY_PATH"
-			echo
-			echo "... before you can run elvis"
-			;;
-		esac
-	fi
-	;;
-esac

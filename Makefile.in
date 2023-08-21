@@ -75,6 +75,7 @@ ALL=elvis$(EXE) ref$(EXE) elvtags$(EXE) elvfmt$(EXE)
 
 ################################################################################
 # The installation directories are relative to this
+DESTDIR=
 PREFIX=/usr/local
 
 ################################################################################
@@ -87,6 +88,7 @@ BINDIR=$(PREFIX)/bin
 # the value here, then you also need to change it in "config.h"
 DATADIR=$(PREFIX)/share/elvis
 DOCDIR= $(PREFIX)/share/elvis/doc
+MANDIR=$(PREFIX)/share/man1
 
 ################################################################################
 # This is the shell command for copying one file to another
@@ -109,7 +111,7 @@ CP=cp
 
 VERSION=2.2_0
 MISC=	BUGS README.html COPYING INSTALL Makefile.in configure instman.sh\
-	elvis.lsm makwin32.bat makmsdos.bat makos2.cmd e2 \
+	elvis.lsm e2 \
 	elvis.spec.in Announce-$(VERSION)
 OSSRCS=	os$(OS)$(SLASH)osblock.c os$(OS)$(SLASH)osdir.c\
 	os$(OS)$(SLASH)osprg.c os$(OS)$(SLASH)ostext.c\
@@ -117,23 +119,8 @@ OSSRCS=	os$(OS)$(SLASH)osblock.c os$(OS)$(SLASH)osdir.c\
 OSOBJS=	osblock$(OBJ) osdir$(OBJ) osprg$(OBJ) ostext$(OBJ) osnet$(OBJ)
 OSOBJS2=tcaphelp$(OBJ)
 OSHDRS=	os$(OS)$(SLASH)osdef.h
-XBM=	guix11/elvis.xbm guix11/elvispin.xbm guix11/gray.xbm
-X11SRCS=guix11/guix11.c guix11/xclip.c guix11/xevent.c guix11/xmisc.c\
-	guix11/xscroll.c guix11/xstatus.c guix11/xtext.c guix11/xtool.c \
-	guix11/xdialog.c
-X11OBJS=guix11$(OBJ) xclip$(OBJ) xevent$(OBJ) xmisc$(OBJ) xscroll$(OBJ)\
-	xstatus$(OBJ) xtext$(OBJ) xtool$(OBJ) xdialog$(OBJ)
-X11HDRS=guix11/guix11.h guix11/xclip.h guix11/xdialog.h guix11/xevent.h\
-	guix11/xmisc.h guix11/xscroll.h guix11/xstatus.h guix11/xtext.h\
-	guix11/xtool.h
+GUISRCS=guicurs.c guiopen.c guitcap.c
 
-GNOMESRCS=guignome/guignome.c guignome/guignome_clip.c guignome/guignome_mousedrag.c guignome/elvisCorba-common.c guignome/elvisCorba-skels.c guignome/elvisCorba-stubs.c guignome/guignome_corba.c
-GNOMEOBJS=guignome/guignome$(OBJ) guignome/guignome_clip$(OBJ) guignome/guignome_mousedrag$(OBJ) guignome/elvisCorba-common$(OBJ) guignome/elvisCorba-skels$(OBJ) guignome/elvisCorba-stubs$(OBJ) guignome/guignome_corba$(OBJ)
-GHOMEHDRS=
-
-GUISRCS=$(GNOMESRCS) $(X11SRCS) guicurs.c guitcap.c guiopen.c
-GUIOBJS=$(GNOMEOBJS) $(X11OBJS) guicurs$(OBJ) guitcap$(OBJ) guiopen$(OBJ)
-GUIHDRS=$(GNOMEHDRS) $(X11HDRS)
 LPSRCS=	lpescape.c lpovrtyp.c lpps.c
 LPOBJS=	lpescape$(OBJ) lpovrtyp$(OBJ) lpps$(OBJ)
 HDRS=	$(OSHDRS) $(GUIHDRS) autocmd.h buffer.h buffer2.h calc.h color.h\
@@ -169,9 +156,6 @@ EVERY=	$(ALL) verify$(EXE) elvdump$(EXE) calc$(EXE)
 SHELL=	/bin/sh
 
 DISTRIB=elvis-$(VERSION)
-DOSEXE=exedos
-WIN32EXE=exewin32
-OS2EXE=exeos2
 
 all: $(ALL)
 
@@ -229,47 +213,6 @@ osnet$(OBJ): os$(OS)$(SLASH)osnet.c
 tcaphelp$(OBJ): os$(OS)$(SLASH)tcaphelp.c
 	$(OSCC) os$(OS)$(SLASH)tcaphelp.c
 
-###############################################################################
-# Rules for GUI-dependent files.  Note that we can't really generalize here
-# as well as we could for OS-dependent files, because different GUIs may be
-# broken down differently.
-
-guix11$(OBJ): guix11/guix11.c $(XBM)
-	$(OSCC) guix11/guix11.c
-
-xclip$(OBJ): guix11/xclip.c
-	$(OSCC) guix11/xclip.c
-
-xevent$(OBJ): guix11/xevent.c
-	$(OSCC) guix11/xevent.c
-
-xmisc$(OBJ): guix11/xmisc.c
-	$(OSCC) guix11/xmisc.c
-
-xscroll$(OBJ): guix11/xscroll.c
-	$(OSCC) guix11/xscroll.c
-
-xstatus$(OBJ): guix11/xstatus.c
-	$(OSCC) guix11/xstatus.c
-
-xtext$(OBJ): guix11/xtext.c
-	$(OSCC) guix11/xtext.c
-
-xtool$(OBJ): guix11/xtool.c
-	$(OSCC) guix11/xtool.c
-
-xdialog$(OBJ): guix11/xdialog.c
-	$(OSCC) guix11/xdialog.c
-
-guignome$(OBJ): guignome/guignome.c
-	$(OSCC) guignome/guignome.c
-
-guignome/elvisCorba-common.c: guignome/elvisCorba.idl
-	(cd guignome; orbit-idl elvisCorba.idl)
-
-guignome/elvisCorba-skels.c: guignome/elvisCorba-common.c
-guignome/elvisCorba-stubs.c: guignome/elvisCorba-common.c
-guignome/elvisCorba.h: guignome/elvisCorba-common.c
 
 ###############################################################################
 # Handy commands
@@ -287,9 +230,6 @@ clean.unix:
 	$(RM) $(DISTRIB).tar.gz
 	$(RM) doc/elvtags.man
 	$(RM) elvis.rpm
-
-clean.msdos:
-	$(RM) *$(OBJ)
 
 clobber: clean
 	$(RM) $(EVERY)
@@ -319,7 +259,6 @@ ciall: $(SRCS) $(HDRS)
 cinever:
 	@for i in *.[ch]; do [ -f RCS/$$i,v ] || echo $$i; done
 	@for i in os*/.; do (cd $$i; for j in *.[ch]; do [ -f $$j,v -o -f RCS/$$j,v ] || echo `dirname $$i`/$$j; done); done
-	@for i in gui*/.; do (cd $$i; for j in *.[ch]; do [ -f $$j,v -o -f RCS/$$j,v ] || echo `dirname $$i`/$$j; done); done
 
 tarball:
 	rm -f $(DISTRIB).tar.gz
@@ -340,7 +279,7 @@ $(DISTRIB).tar.gz:
 	chmod +w $(DISTRIB)/doc/*
 	for i in doc/*.html; do sed 's/<title>Elvis[^ ]*/<title>Elvis-$(VERSION)/;s/ELVIS[^ <]*</ELVIS-$(VERSION)</' $$i >$(DISTRIB)/$$i; done
 	for i in doc/*.man; do sed 's/Elvis 2\.[0-9x][0-9a-z-]*/Elvis $(VERSION)/' $$i >$(DISTRIB)/$$i; done
-	for i in os*/*.c os*/*.h os*/*.mak os*/*.lib os*/*.ICO osos2/*.def osos2/*os2*; do cp $$i $(DISTRIB)/$$i; done
+	for i in os*/*.c os*/*.h os*/*.mak os*/*.lib os*/*.ICO; do cp $$i $(DISTRIB)/$$i; done
 	for i in gui*/*; do if [ -f $$i ]; then cp $$i $(DISTRIB)/$$i; fi; done
 	rm -f $(DISTRIB)/osunix/osconfig.h
 	rm -f $(DISTRIB)/config.h
@@ -351,65 +290,6 @@ $(DISTRIB).tar.gz:
 	tar czf $(DISTRIB).tar.gz $(DISTRIB)
 	rm -rf $(DISTRIB)
 
-$(DISTRIB)-win32.tar.gz: $(WIN32EXE)
-	rm -rf bin-win32
-	mkdir bin-win32
-	cp $(WIN32EXE)/*.[eE][xX][eE] bin-win32
-	sed 's/$$//' <README.html >bin-win32/README.html
-	sed 's/$$//' <BUGS >bin-win32/BUGS
-	sed 's/$$//' <COPYING >bin-win32/COPYING
-	cp --recursive data bin-win32
-	cp --recursive doc bin-win32
-	chmod a+rw bin-win32/* bin-win32/*/* bin-win32/data/*/*
-	rm -rf bin-win32/data/RCS
-	rm -rf bin-win32/doc/RCS
-	showrgb | sed 's/ *\([0-9]\+\) *\([0-9]\+\) *\([0-9]\+\)[ 	]\+\(.*\)/\1	\2	\3	\4/; s/ //g' | tr '[A-Z]' '[a-z]' | sort -u +3 >bin-win32/data/rgb.txt
-	for i in doc/*.html; do sed 's/<title>Elvis[^ ]*/<title>Elvis-$(VERSION)/;s/ELVIS[^ <]*</ELVIS-$(VERSION)</' $$i >bin-win32/$$i; done
-	for i in doc/*.man; do sed 's/Elvis 2\.[0-9x][0-9a-z-]*/Elvis $(VERSION)/' $$i >bin-win32/$$i; done
-	sed 's/$$//' <doc/printdoc.bat >bin-win32/doc/printdoc.bat
-	sed 's/$$//' <doc/license.html >bin-win32/doc/license.html
-	sed 's/$$//' </usr/share/dict/words >bin-win32/data/words
-	(cd bin-win32/data/icons; xpm2ico *.xpm)
-	(cd bin-win32; tar czf ../$(DISTRIB)-win32.tar.gz *)
-
-$(DISTRIB)-msdos.tar.gz: $(DOSEXE)
-	rm -rf bin-msdos
-	mkdir bin-msdos
-	cp $(DOSEXE)/*.[eE][xX][eE] bin-msdos
-	sed 's/$$//' <README.html >bin-msdos/README.html
-	sed 's/$$//' <BUGS >bin-msdos/BUGS
-	sed 's/$$//' <COPYING >bin-msdos/COPYING
-	cp --recursive data bin-msdos
-	cp --recursive doc bin-msdos
-	chmod a+rw bin-msdos/* bin-msdos/*/* bin-msdos/data/*/*
-	rm -rf bin-msdos/data/RCS
-	rm -rf bin-msdos/doc/RCS
-	for i in doc/*.html; do sed 's/<title>Elvis[^ ]*/<title>Elvis-$(VERSION)/;s/ELVIS[^ <]*</ELVIS-$(VERSION)</' $$i >bin-msdos/$$i; done
-	for i in doc/*.man; do sed 's/Elvis 2\.[0-9x][0-9a-z-]*/Elvis $(VERSION)/' $$i >bin-msdos/$$i; done
-	sed 's/$$//' <doc/printdoc.bat >bin-msdos/doc/printdoc.bat
-	sed 's/$$//' <doc/license.html >bin-msdos/doc/license.html
-	(cd bin-msdos; tar czf ../$(DISTRIB)-msdos.tar.gz *)
-
-$(DISTRIB)-os2.tar.gz: $(OS2EXE)
-	rm -rf bin-os2
-	mkdir bin-os2
-	cp $(OS2EXE)/*.[eE][xX][eE] bin-os2
-	sed 's/$$//' <README.html >bin-os2/README.html
-	sed 's/$$//' <BUGS >bin-os2/BUGS
-	sed 's/$$//' <COPYING >bin-os2/COPYING
-	cp --recursive data bin-os2
-	cp --recursive doc bin-os2
-	for i in doc/*.html; do sed 's/<title>Elvis[^ ]*/<title>Elvis-$(VERSION)/;s/ELVIS[^ <]*</ELVIS-$(VERSION)</' $$i >bin-os2/$$i; done
-	for i in doc/*.man; do sed 's/Elvis 2\.[0-9x][0-9a-z-]*/Elvis $(VERSION)/' $$i >bin-os2/$$i; done
-	sed 's/$$//' <doc/printdoc.bat >bin-os2/doc/printdoc.bat
-	sed 's/$$//' <doc/printdoc.bat >bin-os2/doc/printdoc.cmd
-	sed 's/$$//' <doc/license.html >bin-os2/doc/license.html
-	sed 's/$$//' </usr/dict/words >bin-os2/data/words
-	(cd bin-win32/data/icons; xpm2ico *.xpm)
-	cp osos2/elvis.INF bin-os2/data/
-	cp osos2/README.os2 bin-os2/doc/
-	chmod a-w bin-os2/data/* bin-os2/doc/*
-	(cd bin-os2; tar czf ../$(DISTRIB)-os2.tar.gz *)
 
 doc$(SLASH)elvistrs.msg: $(SRCS)
 	sed -n '/%[cds]/d; s/\[[a-zA-Z]*\]//; s/\\\\/\\/g; s/.*msg(MSG_[A-Z]*, "\([^ 	"][^"]*\)".*/\1/p' *.c os*$(SLASH)*.c gui*$(SLASH)*.c | sort -u >doc$(SLASH)elvistrs.msg
@@ -420,45 +300,46 @@ install: install.$(OS)
 
 install.unix: $(ALL) doc/elvtags.man
 	rm -f doc/*.bak
-	[ -d $(BINDIR) ] || mkdir $(BINDIR)
-	cp $(ALL) $(BINDIR)
-	(cd $(BINDIR); chmod 0755 $(ALL))
-	rm -rf $(DATADIR)
-	mkdir -p $(DATADIR)
-	cp data/*.* $(DATADIR)
-	for i in icons scripts stubs themes; do mkdir $(DATADIR)/$$i; cp data/$$i/* $(DATADIR)/$$i/; done
-	rm -rf $(DOCDIR)
-	mkdir -p $(DOCDIR)
-	cp doc/*.html $(DOCDIR)
-	cp doc/*.man $(DOCDIR)
-	cp doc/*.txt $(DOCDIR)
-	cp doc/elvistrs.msg $(DOCDIR)
-	cp doc/printdoc.bat $(DOCDIR)
-	find $(DATADIR) -type f -exec chmod 0644 {} \;
-	find $(DOCDIR) -type f -exec chmod 0644 {} \;
-	(cd doc; for i in *.html; do sed 's/<title>Elvis[^ ]*/<title>Elvis-$(VERSION)/;s/ELVIS[^ <]*</ELVIS-$(VERSION)</' $$i >$(DOCDIR)/$$i; done)
-	(cd doc; for i in *.man; do sed 's/Elvis 2\.[0-9x][0-9a-z-]*/Elvis $(VERSION)/' $$i >$(DOCDIR)/$$i; done)
-	-(cd $(DATADIR); $(BINDIR)/elvtags -gitv stubs/*.c || ctags stubs/*.c)
-	chmod 0755 $(DATADIR)/*/. $(DATADIR) $(DOCDIR)
+	[ -d $(DESTDIR)/$(BINDIR) ] || mkdir $(DESTDIR)/$(BINDIR)
+	cp $(ALL) $(DESTDIR)/$(BINDIR)
+	(cd $(DESTDIR)/$(BINDIR); chmod 0755 $(ALL))
+	rm -rf $(DESTDIR)/$(DATADIR)
+	mkdir -p $(DESTDIR)/$(DATADIR)
+	cp data/*.* $(DESTDIR)/$(DATADIR)
+	for i in icons scripts stubs themes; do mkdir $(DESTDIR)/$(DATADIR)/$$i; cp data/$$i/* $(DESTDIR)/$(DATADIR)/$$i/; done
+	rm -rf $(DESTDIR)/$(DOCDIR)
+	mkdir -p $(DESTDIR)/$(DOCDIR)
+	mkdir -p $(DESTDIR)/$(MANDIR)
+	cp doc/*.html $(DESTDIR)/$(DOCDIR)
+	cp doc/*.man $(DESTDIR)/$(MANDIR)
+	cp doc/*.txt $(DESTDIR)/$(DOCDIR)
+	cp doc/elvistrs.msg $(DESTDIR)/$(DOCDIR)
+	cp doc/printdoc.bat $(DESTDIR)/$(DOCDIR)
+	find $(DESTDIR)/$(DATADIR) -type f -exec chmod 0644 {} \;
+	find $(DESTDIR)/$(DOCDIR) -type f -exec chmod 0644 {} \;
+	(cd doc; for i in *.html; do sed 's/<title>Elvis[^ ]*/<title>Elvis-$(VERSION)/;s/ELVIS[^ <]*</ELVIS-$(VERSION)</' $$i > $(DESTDIR)/$(DOCDIR)/$$i; done)
+	(cd doc; for i in *.man; do sed 's/Elvis 2\.[0-9x][0-9a-z-]*/Elvis $(VERSION)/' $$i >$(DESTDIR)/$(DOCDIR)/$$i; done)
+	-(cd $(DESTDIR)/$(DATADIR); $(DESTDIR)/$(BINDIR)/elvtags -gitv stubs/*.c || ctags stubs/*.c)
+	chmod 0755 $(DESTDIR)/$(DATADIR)/*/. $(DESTDIR)/$(DATADIR) $(DESTDIR)/$(DOCDIR)
 	sh instman.sh -p$(PREFIX) $(ALL)
-	-[ -d /etc/elvis ] || mkdir /etc/elvis
-	-chmod 0755 /etc/elvis/
-	-@ : >/etc/elvis/README && ( \
+	-[ -d $(DESTDIR)/etc/elvis ] || mkdir $(DESTDIR)/etc/elvis
+	-chmod 0755 $(DESTDIR)/etc/elvis/
+	-@ : >$(DESTDIR)/etc/elvis/README && ( \
 	  echo "This directory contains system-dependent versions of elvis' configuration" \
 	  echo "files.  The standard versions are available in $(DATADIR)"  \
 	  echo "To customize any of these configuration files for this system,"  \
 	  echo "first copy the standard version of the file into /etc/elvis and" \
 	  echo "then edit the copy.  Leave the standard version unchanged." \
-	) >>/etc/elvis/README
-	-chmod 0644 /etc/elvis/README
-	@echo "This directory contains the standard versions of elvis' configuration" >$(DATADIR)/README
-	@echo "files.  DO NOT MODIFY THESE FILES!  To perform host-specific customization," >>$(DATADIR)/README
-	@echo "copy files from this directory into /etc/elvis/, and then modify the copies." >>$(DATADIR)/README
-	@echo "To make user-specific changes, create a ~/.elvis/ directory (if it doesn't" >>$(DATADIR)/README
-	@echo "exist already) and copy files from this directory into ~/.elvis/ and then" >>$(DATADIR)/README
-	@echo "modify the copies.  Any file that elvis finds in ~/.elvis/ or /etc/elvis/" >>$(DATADIR)/README
-	@echo "overrides the similarly named file in this directory." >>$(DATADIR)/README
-	chmod 0644 $(DATADIR)/README
+	) >>$(DESTDIR)//etc/elvis/README
+	-chmod 0644 $(DESTDIR)/etc/elvis/README
+	@echo "This directory contains the standard versions of elvis' configuration" >$(DESTDIR)/$(DATADIR)/README
+	@echo "files.  DO NOT MODIFY THESE FILES!  To perform host-specific customization," >>$(DESTDIR)/$(DATADIR)/README
+	@echo "copy files from this directory into /etc/elvis/, and then modify the copies." >>$(DESTDIR)/$(DATADIR)/README
+	@echo "To make user-specific changes, create a ~/.elvis/ directory (if it doesn't" >>$(DESTDIR)/$(DATADIR)/README
+	@echo "exist already) and copy files from this directory into ~/.elvis/ and then" >>$(DESTDIR)/$(DATADIR)/README
+	@echo "modify the copies.  Any file that elvis finds in ~/.elvis/ or /etc/elvis/" >>$(DESTDIR)/$(DATADIR)/README
+	@echo "overrides the similarly named file in this directory." >>$(DESTDIR)/$(DATADIR)/README
+	chmod 0644 $(DESTDIR)/$(DATADIR)/README
 
 
 ###############################################################################
@@ -471,22 +352,3 @@ uninstall.unix:
 	rm -rf $(DOCDIR)
 	sh instman.sh -r -p$(PREFIX) $(ALL)
 
-###############################################################################
-
-elvis.rpm: elvis.spec.in $(DISTRIB).tar.gz
-	@topdir=`rpm --showrc|sed -n 's/%{_usrsrc}/\/usr\/src/;s/^[-0-9]*: _topdir[ 	]//p'`; \
-	 test -d $$topdir || topdir=/usr/src/redhat; \
-	 test -d $$topdir || topdir=/usr/src/packages; \
-	 echo topdir=$$topdir; \
-	 MANDIR=`sh instman.sh -d -p$(PREFIX)`; \
-	 if test -d $$topdir; \
-	 then \
-		 sed "s/VERSION/$(VERSION)/;s,MANDIR,$$MANDIR,g" elvis.spec.in >$$topdir/SPECS/elvis.spec; \
-		 cp $(DISTRIB).tar.gz $$topdir/SOURCES; \
-		 origdir=`pwd`; \
-		 cd $$topdir; \
-		 rpm -bb SPECS/elvis.spec && cp $$topdir/RPMS/i386/elvis-$(VERSION)-*.rpm $$origdir/elvis.rpm; \
-	 else \
-		 echo "Can't find rpm's topdir"; \
-		 exit 2; \
-	 fi
