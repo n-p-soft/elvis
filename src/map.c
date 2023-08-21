@@ -773,7 +773,7 @@ CHAR *maplist(flags, mode, reflen)
 	int	 *reflen;/* where to store length, or NULL if don't care */
 {
 	static MAP *m;	/* used for scanning map list */
-	static CHAR buf[200];
+	static CHAR buf[200] = { 0 };
 	CHAR	*scan, *build;
 	int	i;
 
@@ -797,7 +797,7 @@ CHAR *maplist(flags, mode, reflen)
 	if (m->label)
 	{
 		i = CHARlen(m->label);
-		CHARncpy(buf, m->label, (size_t)(i>9 ? 9 : i));
+		memcpy(buf, m->label, (size_t)(i>9 ? 9 : i));
 	}
 
 	/* if no specific mode was requested, and this map has a mode, then
