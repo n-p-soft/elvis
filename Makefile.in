@@ -94,9 +94,7 @@ CP=cp
 MKDIR=mkdir -p
 
 # Portable compilation rules
-MISC=	COPYING Makefile.in configure \
-	elvis.lsm src/e2 \
-	elvis.spec.in Announce-$(VERSION)
+MISC=	README.md COPYING Makefile.in configure
 OSSRCS=	src/osblock.c src/osdir.c \
 	src/osprg.c src/ostext.c \
 	src/osnet.c src/tcaphelp.c
@@ -203,34 +201,8 @@ tags: $(SRCS) $(HDRS)
 	out/elvtags $(SRCS) $(HDRS)
 
 tarball:
-	rm -f $(DISTRIB).tar.gz
-	make $(DISTRIB).tar.gz
-
-$(DISTRIB).tar.gz:
-	rm -rf $(DISTRIB)
-	$(MKDIR) $(DISTRIB)
-	for i in src/os*; do if [ -d $$i ]; then $(MKDIR) $(DISTRIB)/$$i; fi; done
-	for i in src/gui*; do if [ -d $$i ]; then $(MKDIR) $(DISTRIB)/$$i; fi; done
-	cp src/*.c src/*.h $(MISC) $(DISTRIB)/src
-	rm -f $(DISTRIB)/src/sample.c
-	$(MKDIR) $(DISTRIB)/data
-	cp data/*.* $(DISTRIB)/data/
-	for i in icons scripts stubs themes; do $(MKDIR) $(DISTRIB)/data/$$i; cp data/$$i/* $(DISTRIB)/data/$$i/; done
-	$(MKDIR) $(DISTRIB)/doc
-	cp doc/*.* $(DISTRIB)/doc
-	chmod +w $(DISTRIB)/doc/*
-	for i in doc/*.html; do sed 's/<title>Elvis[^ ]*/<title>Elvis-$(VERSION)/;s/ELVIS[^ <]*</ELVIS-$(VERSION)</' $$i >$(DISTRIB)/$$i; done
-	for i in doc/*.man; do sed 's/Elvis 2\.[0-9x][0-9a-z-]*/Elvis $(VERSION)/' $$i >$(DISTRIB)/$$i; done
-	for i in os*/*.c os*/*.h os*/*.mak os*/*.lib os*/*.ICO; do cp $$i $(DISTRIB)/$$i; done
-	for i in gui*/*; do if [ -f $$i ]; then cp $$i $(DISTRIB)/$$i; fi; done
-	rm -f $(DISTRIB)/src/osunix/osconfig.h
-	rm -f $(DISTRIB)/src/config.h
-	rm -f $(DISTRIB)/Makefile
-	rm -f $(DISTRIB)/doc/elvtags.man
-	rm -f $(DISTRIB)/doc/elvfmt.man
-	find $(DISTRIB) -type f -exec chmod +w {} \;
-	tar czf $(DISTRIB).tar.gz $(DISTRIB)
-	rm -rf $(DISTRIB)
+	rm -f $(DISTRIB).tar.gz; \
+	tar cfz $(DISTRIB).tar.gz $(MISC) doc data src/*.c src/*.h
 
 
 docelvistrs.msg: $(SRCS)
