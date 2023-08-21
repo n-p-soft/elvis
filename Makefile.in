@@ -202,7 +202,8 @@ tags: $(SRCS) $(HDRS)
 
 tarball:
 	rm -f $(DISTRIB).tar.gz; \
-	tar cfz $(DISTRIB).tar.gz $(MISC) doc data src/*.c src/*.h
+	tar cfz $(DISTRIB).tar.gz $(MISC) doc data src/*.c src/*.h \
+		releases/*.sha256
 
 
 docelvistrs.msg: $(SRCS)
