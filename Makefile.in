@@ -120,6 +120,7 @@ OSOBJS=	osblock$(OBJ) osdir$(OBJ) osprg$(OBJ) ostext$(OBJ) osnet$(OBJ)
 OSOBJS2=tcaphelp$(OBJ)
 OSHDRS=	os$(OS)$(SLASH)osdef.h
 GUISRCS=guicurs.c guiopen.c guitcap.c
+GUIOBJS=guicurs$(OBJ) guiopen$(OBJ) guitcap$(OBJ)
 
 LPSRCS=	lpescape.c lpovrtyp.c lpps.c
 LPOBJS=	lpescape$(OBJ) lpovrtyp$(OBJ) lpps$(OBJ)

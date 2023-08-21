@@ -105,9 +105,9 @@ static void cursorshape P_((ELVCURSOR shape));
 /* termcap values */
 static ELVBOOL	AM;		/* :am:  boolean: auto margins? */
 static ELVBOOL	PT;		/* :pt:  boolean: physical tabs? */
-       char	PC;		/* :pc=: pad character (not a string var!) */
+/*       char	PC;		 :pc=: pad character (not a string var!) */
 static char	*VB;		/* :vb=: visible bell */
-       char	*UP;		/* :up=: move cursor up */
+/*       char	*UP;		 :up=: move cursor up */
 static char	*AF;		/* :AF=: change the foreground color */
 static char	*SO;		/* :so=: standout start */
 static char	*SE;		/* :se=: standout end */
