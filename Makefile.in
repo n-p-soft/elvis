@@ -67,11 +67,12 @@ FLAGI=-I
 
 ################################################################################
 # This is a list of programs to be created by "make all".  The possible list
-# includes elvis$(EXE), ref$(EXE), ctags$(EXE), elvtags$(EXE), and fmt$(EXE).
-# ctags and elvtags are the same program under different names.  The $(EXE) on
+# includes elvis, ref, ctags, elvtags, and fmt.
+# ctags and elvtags are the same program under different names.  The  on
 # the end is just in case this Makefile is reconfigured for an operating
 # system which requires the EXE macro to be something like ".exe".
-ALL=elvis$(EXE) ref$(EXE) elvtags$(EXE) elvfmt$(EXE)
+ALLBIN=elvis ref elvtags elvfmt
+ALL=out/elvis out/ref out/elvtags out/elvfmt
 
 ################################################################################
 # The installation directories are relative to this
@@ -91,26 +92,13 @@ DOCDIR= $(PREFIX)/share/elvis/doc
 MANDIR=$(PREFIX)/share/man1
 
 ################################################################################
-# This is the shell command for copying one file to another
+# Shell commands
 CP=cp
+MKDIR=mkdir -p
 
-###############################################################################
-###############################################################################
-###############################################################################
-###########                                                         ###########
-###########                         S T O P !                       ###########
-###########                                                         ###########
-###########  You shouldn't need to modify anything below this line  ###########
-###########                                                         ###########
-###############################################################################
-###############################################################################
-###############################################################################
-
-###############################################################################
 # Portable compilation rules
-
 VERSION=2.2_0
-MISC=	BUGS README.html COPYING INSTALL Makefile.in configure instman.sh\
+MISC=	BUGS README.html COPYING INSTALL Makefile.in configure \
 	elvis.lsm e2 \
 	elvis.spec.in Announce-$(VERSION)
 OSSRCS=	os$(OS)$(SLASH)osblock.c os$(OS)$(SLASH)osdir.c\
@@ -153,7 +141,7 @@ OBJS=	$(OBJ1) $(OBJ2) $(OBJ3)
 REFOBJS=ref$(OBJ) tag$(OBJ) tagsrch$(OBJ) safe$(OBJ)
 CTOBJS=	ctags$(OBJ) tag$(OBJ) safe$(OBJ)
 CFLAGS=	$(FLAGI)os$(OS)
-EVERY=	$(ALL) verify$(EXE) elvdump$(EXE) calc$(EXE)
+EVERY=	$(ALL) verify elvdump calc
 SHELL=	/bin/sh
 
 DISTRIB=elvis-$(VERSION)
@@ -162,36 +150,36 @@ all: $(ALL)
 
 every: $(EVERY)
 
-elvis$(EXE): $(HDRS) main$(OBJ) $(OBJS) $(GUIOBJS) $(LPOBJS)
-	$(CC) $(CFLAGS) main$(OBJ) $(OBJS) $(GUIOBJS) $(LPOBJS) $(LIBS) -o elvis$(EXE)
+out/elvis: $(HDRS) main$(OBJ) $(OBJS) $(GUIOBJS) $(LPOBJS)
+	$(CC) $(CFLAGS) main$(OBJ) $(OBJS) $(GUIOBJS) $(LPOBJS) $(LIBS) -o out/elvis
 
-ctags$(EXE): $(CTOBJS)
-	$(CC) $(CFLAGS) $(CTOBJS) -o ctags$(EXE)
+out/ctags: $(CTOBJS)
+	$(CC) $(CFLAGS) $(CTOBJS) -o out/ctags
 
 doc/elvtags.man: doc/ctags.man
 	sed 's/\<CTAGS\>/ELVTAGS/g; s/ctags\>/elvtags/g; s/ant" elvtags/ant" ctags/' doc/ctags.man >doc/elvtags.man
 
-elvtags$(EXE): ctags$(EXE)
-	$(CP) ctags$(EXE) elvtags$(EXE)
+out/elvtags: out/ctags
+	$(CP) out/ctags out/elvtags
 
-elvfmt$(EXE) doc/elvfmt.man: fmt$(EXE) doc/fmt.man
-	$(CP) fmt$(EXE) elvfmt$(EXE)
+out/elvfmt doc/elvfmt.man: out/fmt doc/fmt.man
+	$(CP) out/fmt out/elvfmt
 	sed 's/\<FMT\>/ELVFMT/g; s/\<fmt\>/elvfmt/g' doc/fmt.man >doc/elvfmt.man
 
-ref$(EXE): $(REFOBJS)
-	$(CC) $(CFLAGS) $(REFOBJS) -o ref$(EXE)
+out/ref: $(REFOBJS)
+	$(CC) $(CFLAGS) $(REFOBJS) -o out/ref
 
-fmt$(EXE): fmt.c os$(OS)$(SLASH)osdir.c
-	$(CC) $(CFLAGS) fmt.c -o fmt$(EXE)
+out/fmt: fmt.c os$(OS)$(SLASH)osdir.c
+	$(CC) $(CFLAGS) fmt.c -o out/fmt
 
-verify$(EXE): $(HDRS) verify$(OBJ) $(OBJ1) $(OBJ2)
-	$(CC) $(CFLAGS) verify$(OBJ) $(OBJ1) $(OBJ2) -o verify$(EXE)
+out/verify: $(HDRS) verify$(OBJ) $(OBJ1) $(OBJ2)
+	$(CC) $(CFLAGS) verify$(OBJ) $(OBJ1) $(OBJ2) -o out/verify
 
-elvdump$(EXE): $(HDRS) elvdump$(OBJ) $(OBJ1)
-	$(CC) $(CFLAGS) elvdump$(OBJ) $(OBJ1) -o elvdump$(EXE)
+out/elvdump: $(HDRS) elvdump$(OBJ) $(OBJ1)
+	$(CC) $(CFLAGS) elvdump$(OBJ) $(OBJ1) -o out/elvdump
 
-calc: $(HDRS) calc.c
-	$(CC) $(CFLAGS) -DTRY calc.c -o calc
+out/calc: $(HDRS) calc.c
+	$(CC) $(CFLAGS) -DTRY calc.c -o out/calc
 
 ###############################################################################
 # Rules for os-dependent files
@@ -252,14 +240,7 @@ wc: $(SRCS) $(HDRS)
 	wc $(SRCS) $(HDRS) | sort -n
 
 tags: $(SRCS) $(HDRS)
-	elvtags $(SRCS) $(HDRS)
-
-ciall: $(SRCS) $(HDRS)
-	ci -u$(REV) Makefile $(SRCS) $(HDRS)
-
-cinever:
-	@for i in *.[ch]; do [ -f RCS/$$i,v ] || echo $$i; done
-	@for i in os*/.; do (cd $$i; for j in *.[ch]; do [ -f $$j,v -o -f RCS/$$j,v ] || echo `dirname $$i`/$$j; done); done
+	out/elvtags $(SRCS) $(HDRS)
 
 tarball:
 	rm -f $(DISTRIB).tar.gz
@@ -267,15 +248,15 @@ tarball:
 
 $(DISTRIB).tar.gz:
 	rm -rf $(DISTRIB)
-	mkdir $(DISTRIB)
-	for i in os*; do if [ -d $$i ]; then mkdir $(DISTRIB)/$$i; fi; done
-	for i in gui*; do if [ -d $$i ]; then mkdir $(DISTRIB)/$$i; fi; done
+	$(MKDIR) $(DISTRIB)
+	for i in os*; do if [ -d $$i ]; then $(MKDIR) $(DISTRIB)/$$i; fi; done
+	for i in gui*; do if [ -d $$i ]; then $(MKDIR) $(DISTRIB)/$$i; fi; done
 	cp *.c *.h $(MISC) $(DISTRIB)
 	rm -f $(DISTRIB)/sample.c
-	mkdir $(DISTRIB)/data
+	$(MKDIR) $(DISTRIB)/data
 	cp data/*.* $(DISTRIB)/data/
-	for i in icons scripts stubs themes; do mkdir $(DISTRIB)/data/$$i; cp data/$$i/* $(DISTRIB)/data/$$i/; done
-	mkdir $(DISTRIB)/doc
+	for i in icons scripts stubs themes; do $(MKDIR) $(DISTRIB)/data/$$i; cp data/$$i/* $(DISTRIB)/data/$$i/; done
+	$(MKDIR) $(DISTRIB)/doc
 	cp doc/*.* $(DISTRIB)/doc
 	chmod +w $(DISTRIB)/doc/*
 	for i in doc/*.html; do sed 's/<title>Elvis[^ ]*/<title>Elvis-$(VERSION)/;s/ELVIS[^ <]*</ELVIS-$(VERSION)</' $$i >$(DISTRIB)/$$i; done
@@ -301,29 +282,28 @@ install: install.$(OS)
 
 install.unix: $(ALL) doc/elvtags.man
 	rm -f doc/*.bak
-	[ -d $(DESTDIR)/$(BINDIR) ] || mkdir $(DESTDIR)/$(BINDIR)
-	cp $(ALL) $(DESTDIR)/$(BINDIR)
-	(cd $(DESTDIR)/$(BINDIR); chmod 0755 $(ALL))
+	[ -d $(DESTDIR)/$(BINDIR) ] || $(MKDIR) $(DESTDIR)/$(BINDIR)
+	cp -a $(ALL) $(DESTDIR)/$(BINDIR)
 	rm -rf $(DESTDIR)/$(DATADIR)
-	mkdir -p $(DESTDIR)/$(DATADIR)
+	$(MKDIR) -p $(DESTDIR)/$(DATADIR)
 	cp data/*.* $(DESTDIR)/$(DATADIR)
-	for i in icons scripts stubs themes; do mkdir $(DESTDIR)/$(DATADIR)/$$i; cp data/$$i/* $(DESTDIR)/$(DATADIR)/$$i/; done
+	for i in icons scripts stubs themes; do $(MKDIR) $(DESTDIR)/$(DATADIR)/$$i; cp data/$$i/* $(DESTDIR)/$(DATADIR)/$$i/; done
 	rm -rf $(DESTDIR)/$(DOCDIR)
-	mkdir -p $(DESTDIR)/$(DOCDIR)
-	mkdir -p $(DESTDIR)/$(MANDIR)
+	$(MKDIR) -p $(DESTDIR)/$(DOCDIR)
+	$(MKDIR) -p $(DESTDIR)/$(MANDIR)
 	cp doc/*.html $(DESTDIR)/$(DOCDIR)
-	cp doc/*.man $(DESTDIR)/$(MANDIR)
 	cp doc/*.txt $(DESTDIR)/$(DOCDIR)
 	cp doc/elvistrs.msg $(DESTDIR)/$(DOCDIR)
 	cp doc/printdoc.bat $(DESTDIR)/$(DOCDIR)
 	find $(DESTDIR)/$(DATADIR) -type f -exec chmod 0644 {} \;
 	find $(DESTDIR)/$(DOCDIR) -type f -exec chmod 0644 {} \;
 	(cd doc; for i in *.html; do sed 's/<title>Elvis[^ ]*/<title>Elvis-$(VERSION)/;s/ELVIS[^ <]*</ELVIS-$(VERSION)</' $$i > $(DESTDIR)/$(DOCDIR)/$$i; done)
-	(cd doc; for i in *.man; do sed 's/Elvis 2\.[0-9x][0-9a-z-]*/Elvis $(VERSION)/' $$i >$(DESTDIR)/$(DOCDIR)/$$i; done)
 	-(cd $(DESTDIR)/$(DATADIR); $(DESTDIR)/$(BINDIR)/elvtags -gitv stubs/*.c || ctags stubs/*.c)
 	chmod 0755 $(DESTDIR)/$(DATADIR)/*/. $(DESTDIR)/$(DATADIR) $(DESTDIR)/$(DOCDIR)
-	sh instman.sh -p$(PREFIX) $(ALL)
-	-[ -d $(DESTDIR)/etc/elvis ] || mkdir $(DESTDIR)/etc/elvis
+	for F in elvis elvfmt; do \
+		cp doc/$$F.man $(DESTDIR)/$(MANDIR)/$$F.1; \
+		gzip -f $(DESTDIR)/$(MANDIR)/$$F.1; done
+	-[ -d $(DESTDIR)/etc/elvis ] || $(MKDIR) $(DESTDIR)/etc/elvis
 	-chmod 0755 $(DESTDIR)/etc/elvis/
 	-@ : >$(DESTDIR)/etc/elvis/README && ( \
 	  echo "This directory contains system-dependent versions of elvis' configuration" \
@@ -351,5 +331,5 @@ uninstall.unix:
 	(cd $(BINDIR); $(RM) $(ALL))
 	rm -rf $(DATADIR)
 	rm -rf $(DOCDIR)
-	sh instman.sh -r -p$(PREFIX) $(ALL)
+	rm -f $(MANDIR)/{elvis.1.gz,elvfmt.1.gz}
 

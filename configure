@@ -11,7 +11,7 @@ PREFIX=/usr
 BINDIR='$(PREFIX)/bin'
 DATADIR='$(PREFIX)/share/elvis/'
 DOCDIR='$(PREFIX)/share/elvis/doc/'
-MANDIR='$(PREFIX)/share/man/man1'
+MANDIR='$(PREFIX)/share/man/man1/'
 SYS=""
 DEFAULT_CC="cc -O"
 IOCTL=""
@@ -392,9 +392,6 @@ fi
 
 ################################################################################
 
-# Save these arguments in a "config.stat" script
-echo exec configure $args $SYS >config.stat
-
 # Tell the user what we discovered
 echo "Options: $args"
 echo "System:   $SYS"
@@ -477,7 +474,7 @@ cat >config.h <<eof-config
 #define	FEATURE_MKEXRC	/* the :mkexrc command */
 #define	FEATURE_NORMAL	/* vim-style :normal command */
 #define	FEATURE_PROTO	/* using aliases to add new protocols */
-#undef	FEATURE_RAM	/* store edit buffer in RAM if "-f ram" */
+#define	FEATURE_RAM	/* store edit buffer in RAM */
 #define	FEATURE_RCSID	/* include RCS Id strings for all source files */
 #define FEATURE_REGION	/* the :region and :unregion commands */
 #define	FEATURE_SHOWTAG	/* the showtag option */
@@ -601,6 +598,9 @@ s!^DATADIR=.*!DATADIR=$DATADIR!
 s!^DOCDIR=.*!DOCDIR=$DOCDIR!
 s!^MANDIR=.*!MANDIR=$MANDIR!
 eof-all
+
+mkdir -p out
+rm -f out/* *.o
 
 # Run "Makefile.in" through that sed script, to produce "Makefile"
 sed -f $tmp Makefile.in >Makefile && rm $tmp
