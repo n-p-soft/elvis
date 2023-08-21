@@ -1,4 +1,6 @@
 #!/bin/sh
+# (c) 2003, Steve Kirkendall
+# (c) 2023, Nicolas Provost <dev@npsoft.fr>
 
 # This is a UNIX shell script that generates a custom "Makefile" file and
 # a "config.h" file.
@@ -420,7 +422,7 @@ esac
 
 # Generate the "config.h" file
 ELVISPATH=`echo "~/.elvis:/etc/elvis:$DATADIR:$DOCDIR" | sed s,'$(DATADIR)',"$DATADIR",g\;s,'$(PREFIX)',"$PREFIX",g`
-cat >config.h <<eof-config
+cat >src/config.h <<eof-config
 /* config.h
  *
  * This file contains C macro definitions which indicate which features
@@ -600,7 +602,7 @@ s!^MANDIR=.*!MANDIR=$MANDIR!
 eof-all
 
 mkdir -p out
-rm -f out/* *.o
+rm -f out/* src/*.o
 
 # Run "Makefile.in" through that sed script, to produce "Makefile"
 sed -f $tmp Makefile.in >Makefile && rm $tmp

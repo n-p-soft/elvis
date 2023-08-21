@@ -1,4 +1,6 @@
 # Makefile.in
+# (c) 2003, Steve Kirkendall
+# (c) 2023, Nicolas Provost <dev@npsoft.fr>
 # $Id: Makefile.in,v 2.121 2003/10/21 02:31:00 steve Exp $
 #
 # Makefile.in should not be modified!  The "configure" script reads Makefile.in
@@ -8,13 +10,13 @@
 # Makefile.  That will also create a "config.h" file which may require some
 # tweaking.
 
+VERSION=2.3.0
+DISTRIB=elvis-$(VERSION)
+
 ################################################################################
 # This is the name of the compiler, along with any flags that should be used
 # both for compiling and for linking.  Typical values are "cc -g" or "cc -O".
-# If you're compiling with X-windows support, you may need to add a
-# "-I/usr/X11/include" flag or something similar.
-#CC=gcc -g -Wall -pedantic -Wtraditional -Wpointer-arith -Wstrict-prototypes -Wmissing-prototypes -I/usr/include/freetype2 -I/usr/X11R6/include
-CC=cc -O
+CC=cc -O -Isrc -fstack-protector-all
 
 ################################################################################
 # This macro gives any arguments which will be needed during linking.
@@ -32,12 +34,7 @@ OS=unix
 # This is a command for compiling files in a subdirectory, and placing the
 # resultant object files in the current directory.  Most UNIX compilers behave
 # this way naturally, so you probably won't need to modify this.
-OSCC=$(CC) -I. $(CFLAGS) $(FLAGC)
-
-################################################################################
-# This is the separator between a subdirectory name and a file name.  For UNIX
-# this should always be a "/" character.
-SLASH=/
+OSCC=$(CC) -Isrc $(CFLAGS) $(FLAGC)
 
 ################################################################################
 # This is the file name extension for object files.  For UNIX, this is almost
@@ -97,61 +94,70 @@ CP=cp
 MKDIR=mkdir -p
 
 # Portable compilation rules
-VERSION=2.2_0
-MISC=	BUGS README.html COPYING INSTALL Makefile.in configure \
-	elvis.lsm e2 \
+MISC=	COPYING Makefile.in configure \
+	elvis.lsm src/e2 \
 	elvis.spec.in Announce-$(VERSION)
-OSSRCS=	os$(OS)$(SLASH)osblock.c os$(OS)$(SLASH)osdir.c\
-	os$(OS)$(SLASH)osprg.c os$(OS)$(SLASH)ostext.c\
-	os$(OS)$(SLASH)osnet.c os$(OS)$(SLASH)tcaphelp.c
-OSOBJS=	osblock$(OBJ) osdir$(OBJ) osprg$(OBJ) ostext$(OBJ) osnet$(OBJ)
-OSOBJS2=tcaphelp$(OBJ)
-OSHDRS=	os$(OS)$(SLASH)osdef.h
-GUISRCS=guicurs.c guiopen.c guitcap.c
-GUIOBJS=guicurs$(OBJ) guiopen$(OBJ) guitcap$(OBJ)
+OSSRCS=	src/osblock.c src/osdir.c \
+	src/osprg.c src/ostext.c \
+	src/osnet.c src/tcaphelp.c
+OSOBJS=	src/osblock.o src/osdir.o src/osprg.o \
+	src/ostext.o src/osnet.o
+OSOBJS2=src/tcaphelp.o
+OSHDRS=	src/osdef.h
+GUISRCS=src/guicurs.c src/guiopen.c src/guitcap.c
+GUIOBJS=src/guicurs.o src/guiopen.o src/guitcap.o
 
-LPSRCS=	lpescape.c lpovrtyp.c lpps.c
-LPOBJS=	lpescape$(OBJ) lpovrtyp$(OBJ) lpps$(OBJ)
-HDRS=	$(OSHDRS) $(GUIHDRS) autocmd.h buffer.h buffer2.h calc.h color.h\
-	cut.h descr.h digraph.h display.h display2.h draw.h draw2.h elvis.h\
-	elvisio.h event.h ex.h gui.h gui2.h input.h lowbuf.h lp.h map.h\
-	mark.h message.h message2.h misc.h more.h move.h need.h operator.h\
-	opsys.h optglob.h options.h regexp.h region.h safe.h scan.h session.h\
-	spell.h state.h state2.h tag.h tagsrch.h tagelvis.h version.h vi.h\
-	vicmd.h window.h config.h
-SRCS=	$(OSSRCS) $(GUISRCS) $(LPSRCS) autocmd.c buffer.c calc.c color.c cut.c\
-	descr.c digraph.c display.c dmhex.c dmmarkup.c dmnormal.c dmsyntax.c\
-	draw.c event.c ex.c exaction.c exconfig.c exedit.c exmake.c exsubst.c\
-	fold.c ftp.c gui.c http.c input.c io.c lowbuf.c lp.c main.c map.c\
-	mark.c message.c misc.c more.c move.c need.c operator.c optglob.c\
-	options.c regexp.c region.c regsub.c safe.c scan.c search.c session.c\
-	spell.c state.c tag.c tagsrch.c tagelvis.c url.c vi.c vicmd.c window.c
-OBJ1=	$(OSOBJS) optglob$(OBJ) options$(OBJ) safe$(OBJ) session$(OBJ)
-OBJ2=	buffer$(OBJ) calc$(OBJ) color$(OBJ) descr$(OBJ) digraph$(OBJ)\
-	display$(OBJ) gui$(OBJ) lowbuf$(OBJ) mark$(OBJ) misc$(OBJ) io$(OBJ)\
-	dmhex$(OBJ) dmmarkup$(OBJ) dmnormal$(OBJ) dmsyntax$(OBJ) scan$(OBJ)
-OBJ3=	$(OSOBJS2) autocmd$(OBJ) cut$(OBJ) draw$(OBJ) event$(OBJ) ex$(OBJ)\
-	exaction$(OBJ) exconfig$(OBJ) exedit$(OBJ) exmake$(OBJ) exsubst$(OBJ)\
-	fold$(OBJ) ftp$(OBJ) http$(OBJ) input$(OBJ) lp$(OBJ) map$(OBJ)\
-	message$(OBJ) move$(OBJ) more$(OBJ) need$(OBJ) operator$(OBJ)\
-	regexp$(OBJ) region$(OBJ) regsub$(OBJ) search$(OBJ) spell$(OBJ)\
-	state$(OBJ) tinytcap$(OBJ) tag$(OBJ) tagsrch$(OBJ) tagelvis$(OBJ)\
-	url$(OBJ) vi$(OBJ) vicmd$(OBJ) window$(OBJ)
+LPSRCS=	src/lpescape.c src/lpovrtyp.c src/lpps.c
+LPOBJS=	src/lpescape.o src/lpovrtyp.o src/lpps.o
+HDRS=	$(OSHDRS) $(GUIHDRS) src/autocmd.h src/buffer.h src/buffer2.h \
+	src/calc.h src/color.h\
+	src/cut.h src/descr.h src/digraph.h src/display.h src/display2.h \
+	src/draw.h src/draw2.h src/elvis.h \
+	src/elvisio.h src/event.h src/ex.h src/gui.h src/gui2.h \
+	src/input.h src/lowbuf.h src/lp.h src/map.h \
+	src/mark.h src/message.h src/message2.h src/misc.h \
+	src/more.h src/move.h src/need.h src/operator.h \
+	src/opsys.h src/optglob.h src/options.h src/regexp.h \
+	src/region.h src/safe.h src/scan.h src/session.h \
+	src/spell.h src/state.h src/state2.h src/tag.h src/tagsrch.h \
+	src/tagelvis.h src/version.h src/vi.h \
+	src/vicmd.h src/window.h src/config.h
+SRCS=	$(OSSRCS) $(GUISRCS) $(LPSRCS) src/autocmd.c src/buffer.c \
+	src/calc.c src/color.c src/cut.c \
+	src/descr.c src/digraph.c src/display.c src/dmhex.c \
+	src/dmmarkup.c src/dmnormal.c src/dmsyntax.c \
+	src/draw.c src/event.c src/ex.c src/exaction.c src/exconfig.c \
+	src/exedit.c src/exmake.c src/exsubst.c \
+	src/fold.c src/ftp.c src/gui.c src/http.c src/input.c \
+	src/io.c src/lowbuf.c src/lp.c src/main.c src/map.c \
+	src/mark.c src/message.c src/misc.c src/more.c src/move.c \
+	src/need.c src/operator.c src/optglob.c \
+	src/options.c src/regexp.c src/region.c src/regsub.c src/safe.c \
+	src/scan.c src/search.c src/session.c \
+	src/spell.c src/state.c src/tag.c src/tagsrch.c src/tagelvis.c \
+	src/url.c src/vi.c src/vicmd.c src/window.c
+OBJ1=	$(OSOBJS) src/optglob.o src/options.o src/safe.o src/session.o
+OBJ2=	src/buffer.o src/calc.o src/color.o src/descr.o src/digraph.o \
+	src/display.o src/gui.o src/lowbuf.o src/mark.o src/misc.o src/io.o \
+	src/dmhex.o src/dmmarkup.o src/dmnormal.o src/dmsyntax.o src/scan.o
+OBJ3=	$(OSOBJS2) src/autocmd.o src/cut.o src/draw.o src/event.o src/ex.o \
+	src/exaction.o src/exconfig.o src/exedit.o src/exmake.o src/exsubst.o \
+	src/fold.o src/ftp.o src/http.o src/input.o src/lp.o src/map.o \
+	src/message.o src/move.o src/more.o src/need.o src/operator.o \
+	src/regexp.o src/region.o src/regsub.o src/search.o src/spell.o \
+	src/state.o src/tinytcap.o src/tag.o src/tagsrch.o src/tagelvis.o \
+	src/url.o src/vi.o src/vicmd.o src/window.o
 OBJS=	$(OBJ1) $(OBJ2) $(OBJ3)
-REFOBJS=ref$(OBJ) tag$(OBJ) tagsrch$(OBJ) safe$(OBJ)
-CTOBJS=	ctags$(OBJ) tag$(OBJ) safe$(OBJ)
-CFLAGS=	$(FLAGI)os$(OS)
-EVERY=	$(ALL) verify elvdump calc
+REFOBJS= src/ref.o src/tag.o src/tagsrch.o src/safe.o
+CTOBJS=	src/ctags.o src/tag.o src/safe.o
+CFLAGS=	$(FLAGI)src/
 SHELL=	/bin/sh
-
-DISTRIB=elvis-$(VERSION)
 
 all: $(ALL)
 
-every: $(EVERY)
-
-out/elvis: $(HDRS) main$(OBJ) $(OBJS) $(GUIOBJS) $(LPOBJS)
-	$(CC) $(CFLAGS) main$(OBJ) $(OBJS) $(GUIOBJS) $(LPOBJS) $(LIBS) -o out/elvis
+out/elvis: $(HDRS) src/main.o $(OBJS) $(GUIOBJS) $(LPOBJS)
+	$(CC) $(CFLAGS) src/main.o $(OBJS) $(GUIOBJS) \
+		$(LPOBJS) $(LIBS) -o out/elvis
 
 out/ctags: $(CTOBJS)
 	$(CC) $(CFLAGS) $(CTOBJS) -o out/ctags
@@ -169,72 +175,26 @@ out/elvfmt doc/elvfmt.man: out/fmt doc/fmt.man
 out/ref: $(REFOBJS)
 	$(CC) $(CFLAGS) $(REFOBJS) -o out/ref
 
-out/fmt: fmt.c os$(OS)$(SLASH)osdir.c
-	$(CC) $(CFLAGS) fmt.c -o out/fmt
+out/fmt: src/fmt.c src/osdir.c
+	$(CC) $(CFLAGS) src/fmt.c -o out/fmt
 
-out/verify: $(HDRS) verify$(OBJ) $(OBJ1) $(OBJ2)
-	$(CC) $(CFLAGS) verify$(OBJ) $(OBJ1) $(OBJ2) -o out/verify
+out/verify: $(HDRS) src/verify.o $(OBJ1) $(OBJ2)
+	$(CC) $(CFLAGS) src/verify.o $(OBJ1) $(OBJ2) -o out/verify
 
-out/elvdump: $(HDRS) elvdump$(OBJ) $(OBJ1)
-	$(CC) $(CFLAGS) elvdump$(OBJ) $(OBJ1) -o out/elvdump
+out/elvdump: $(HDRS) src/elvdump.o $(OBJ1)
+	$(CC) $(CFLAGS) src/elvdump.o $(OBJ1) -o out/elvdump
 
-out/calc: $(HDRS) calc.c
-	$(CC) $(CFLAGS) -DTRY calc.c -o out/calc
-
-###############################################################################
-# Rules for os-dependent files
-
-osblock$(OBJ): os$(OS)$(SLASH)osblock.c
-	$(OSCC) os$(OS)$(SLASH)osblock.c
-
-osdir$(OBJ): os$(OS)$(SLASH)osdir.c
-	$(OSCC) os$(OS)$(SLASH)osdir.c
-
-osprg$(OBJ): os$(OS)$(SLASH)osprg.c
-	$(OSCC) os$(OS)$(SLASH)osprg.c
-
-ostext$(OBJ): os$(OS)$(SLASH)ostext.c
-	$(OSCC) os$(OS)$(SLASH)ostext.c
-
-osnet$(OBJ): os$(OS)$(SLASH)osnet.c
-	$(OSCC) os$(OS)$(SLASH)osnet.c
-
-tcaphelp$(OBJ): os$(OS)$(SLASH)tcaphelp.c
-	$(OSCC) os$(OS)$(SLASH)tcaphelp.c
+out/calc: $(HDRS) src/calc.c
+	$(CC) $(CFLAGS) -DTRY src/calc.c -o out/calc
 
 
 ###############################################################################
 # Handy commands
 
-clean: clean.$(OS)
-	$(RM) $(ALL)
-
-clean.unix:
-	$(RM) *$(OBJ)
-	$(RM) guignome/*$(OBJ) guignome/elvisCorba-* guignome/elvisCorba.h
-	$(RM) core
-	$(RM) errlist
-	$(RM) verify.elv
-	$(RM) gdk_imlib.h
-	$(RM) $(DISTRIB).tar.gz
+clean:
+	$(RM) src/*.o out/*
+	$(RM) elvis*.tar.gz
 	$(RM) doc/elvtags.man
-	$(RM) elvis.rpm
-
-clobber: clean
-	$(RM) $(EVERY)
-	$(RM) tags
-	$(RM) detail
-	$(RM) .elv*
-	$(RM) foo
-	$(RM) stderr
-
-tmp:
-	$(RM) /var/tmp/elvis*.ses
-	$(RM) core
-
-sure: verify
-	$(RM) verify.elv
-	verify >detail || gdb verify core
 
 wc: $(SRCS) $(HDRS)
 	wc $(SRCS) $(HDRS) | sort -n
@@ -249,10 +209,10 @@ tarball:
 $(DISTRIB).tar.gz:
 	rm -rf $(DISTRIB)
 	$(MKDIR) $(DISTRIB)
-	for i in os*; do if [ -d $$i ]; then $(MKDIR) $(DISTRIB)/$$i; fi; done
-	for i in gui*; do if [ -d $$i ]; then $(MKDIR) $(DISTRIB)/$$i; fi; done
-	cp *.c *.h $(MISC) $(DISTRIB)
-	rm -f $(DISTRIB)/sample.c
+	for i in src/os*; do if [ -d $$i ]; then $(MKDIR) $(DISTRIB)/$$i; fi; done
+	for i in src/gui*; do if [ -d $$i ]; then $(MKDIR) $(DISTRIB)/$$i; fi; done
+	cp src/*.c src/*.h $(MISC) $(DISTRIB)/src
+	rm -f $(DISTRIB)/src/sample.c
 	$(MKDIR) $(DISTRIB)/data
 	cp data/*.* $(DISTRIB)/data/
 	for i in icons scripts stubs themes; do $(MKDIR) $(DISTRIB)/data/$$i; cp data/$$i/* $(DISTRIB)/data/$$i/; done
@@ -263,8 +223,8 @@ $(DISTRIB).tar.gz:
 	for i in doc/*.man; do sed 's/Elvis 2\.[0-9x][0-9a-z-]*/Elvis $(VERSION)/' $$i >$(DISTRIB)/$$i; done
 	for i in os*/*.c os*/*.h os*/*.mak os*/*.lib os*/*.ICO; do cp $$i $(DISTRIB)/$$i; done
 	for i in gui*/*; do if [ -f $$i ]; then cp $$i $(DISTRIB)/$$i; fi; done
-	rm -f $(DISTRIB)/osunix/osconfig.h
-	rm -f $(DISTRIB)/config.h
+	rm -f $(DISTRIB)/src/osunix/osconfig.h
+	rm -f $(DISTRIB)/src/config.h
 	rm -f $(DISTRIB)/Makefile
 	rm -f $(DISTRIB)/doc/elvtags.man
 	rm -f $(DISTRIB)/doc/elvfmt.man
@@ -273,14 +233,12 @@ $(DISTRIB).tar.gz:
 	rm -rf $(DISTRIB)
 
 
-doc$(SLASH)elvistrs.msg: $(SRCS)
-	sed -n '/%[cds]/d; s/\[[a-zA-Z]*\]//; s/\\\\/\\/g; s/.*msg(MSG_[A-Z]*, "\([^ 	"][^"]*\)".*/\1/p' *.c os*$(SLASH)*.c gui*$(SLASH)*.c | sort -u >doc$(SLASH)elvistrs.msg
+docelvistrs.msg: $(SRCS)
+	sed -n '/%[cds]/d; s/\[[a-zA-Z]*\]//; s/\\\\/\\/g; s/.*msg(MSG_[A-Z]*, "\([^ 	"][^"]*\)".*/\1/p' *.c os**.c gui**.c | sort -u >docelvistrs.msg
 
 ###############################################################################
 
-install: install.$(OS)
-
-install.unix: $(ALL) doc/elvtags.man
+install: $(ALL) doc/elvtags.man
 	rm -f doc/*.bak
 	[ -d $(DESTDIR)/$(BINDIR) ] || $(MKDIR) $(DESTDIR)/$(BINDIR)
 	cp -a $(ALL) $(DESTDIR)/$(BINDIR)
@@ -325,9 +283,7 @@ install.unix: $(ALL) doc/elvtags.man
 
 ###############################################################################
 
-uninstall: uninstall.$(OS)
-
-uninstall.unix:
+uninstall:
 	(cd $(BINDIR); $(RM) $(ALL))
 	rm -rf $(DATADIR)
 	rm -rf $(DOCDIR)
