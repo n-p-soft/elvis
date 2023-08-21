@@ -409,7 +409,7 @@ RESULT ex_region(xinf)
 		if (comment)
 		{
 			*comment++ = '\0';
-			while (*comment == ' ');
+			while (*comment == ' ') { };
 				comment++;
 			if (*comment == '\0')
 				comment = xinf->rhs;

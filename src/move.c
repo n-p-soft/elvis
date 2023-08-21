@@ -1892,7 +1892,7 @@ RESULT m_bsentence(win, vinf)
 			{
 				scannext(&cp);
 			}
-			if (&cp)
+			if (cp)
 				marksetoffset(win->state->cursor, markoffset(scanmark(&cp)));
 			else
 			{

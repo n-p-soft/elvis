@@ -401,7 +401,7 @@ void winresize(win, rows, columns)
 
 #ifdef FEATURE_AUTOCMD
 	/* handle OptChanged event for lines or columns now */
-	if (changed);
+	if (changed)
 		auperform(win, ElvFalse, NULL, AU_OPTCHANGED, changed);
 #endif
 }

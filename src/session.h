@@ -1,6 +1,7 @@
 /* session.h */
 /* Copyright 1995 by Steve Kirkendall */
 
+#include <inttypes.h>
 
 /* This file contains macros, tyepdefs, and extern declarations pertaining to
  * session files.  This includes the session file format, block cacheing,
@@ -91,10 +92,10 @@ typedef union
 	char	sizetester[BLKSIZE];	/* forces BLK to be prefered size */
 } BLK;
 
-#define SES_MAXSUPER	((o_blksize - (int)(((BLK *)0)->super.buf)) / sizeof(BLKNO))
-#define SES_MAXSUPER2	((o_blksize - (int)(((BLK *)0)->super2.buf)) / sizeof(BLKNO))
-#define SES_MAXBUFINFO	(o_blksize - (int)(((BLK *)0)->bufinfo.name))
-#define SES_MAXBLKLIST	((o_blksize - (int)(((BLK *)0)->blklist.blk)) / sizeof(((BLK *)0)->blklist.blk[0]))
+#define SES_MAXSUPER	((o_blksize - (intptr_t)(((BLK *)0)->super.buf)) / sizeof(BLKNO))
+#define SES_MAXSUPER2	((o_blksize - (intptr_t)(((BLK *)0)->super2.buf)) / sizeof(BLKNO))
+#define SES_MAXBUFINFO	(o_blksize - (intptr_t)(((BLK *)0)->bufinfo.name))
+#define SES_MAXBLKLIST	((o_blksize - (intptr_t)(((BLK *)0)->blklist.blk)) / sizeof(((BLK *)0)->blklist.blk[0]))
 #define SES_MAXCHARS	(o_blksize / sizeof(CHAR))
 
 
