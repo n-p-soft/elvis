@@ -8,4 +8,5 @@
 /doc/elvfmt.man
 /src/config.h
 Makefile
+/*.tar.gz
 # *~

@@ -96,7 +96,7 @@ static void usage(hint)
 	msg(MSG_INFO, "       -S          Set security=safer, to protect against Trojan horses");
 	msg(MSG_INFO, "       -SS         Set security=restricted, for maximum security");
 	msg(MSG_INFO, "       -w lines    Set scroll amount to \"lines\"");
-	msg(MSG_INFO, "       -f session  Use \"session\" as the session file");
+	msg(MSG_INFO, "       -f session  Use \"session\" as the session file, or \"ram\"");
 	msg(MSG_INFO, "       -G gui      Use the \"gui\" user interface \\(see below\\)");
 	msg(MSG_INFO, "       -c command  Execute \"command\" after loading first file");
 	msg(MSG_INFO, "       -s          Read a script from stdin and execute it");
@@ -188,6 +188,11 @@ static int parseflags(argc, argv)
 	/* copy argv[0] into an option so we can access it in "elvis.ini" */
 	o_program = toCHAR(argv[0]);
 
+#ifdef FEATURE_RAM
+	/* use memory as default session if no file specified */
+	o_session = toCHAR("ram");
+#endif
+
 	/* for each argument... */
 	for (i = 1; i < argc && strcmp(argv[i], "--"); i++)
 	{
@@ -240,7 +245,7 @@ static int parseflags(argc, argv)
 					}
 					else
 					{
-						usage("-s requires the name of a session file");
+						usage("-f requires the name of a session file");
 					}
 					j = -1; /* so we stop processing this arg */
 					break;

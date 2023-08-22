@@ -36,6 +36,9 @@ static BLK **blklist;
 static int nblks;
 #endif
 
+#define SES_IN_RAM ((o_session && !CHARcmp(o_session, toCHAR("ram"))))
+
+
 /* This function creates a new block file, and returns ElvTrue if successful,
  * or ElvFalse if failed because the file was already busy.
  */
@@ -50,7 +53,7 @@ ELVBOOL blkopen(force, buf)
 	long	oldcount;
 
 #ifdef FEATURE_RAM
-	if (o_session && !CHARcmp(o_session, toCHAR("ram")))
+	if (SES_IN_RAM)
 	{
 		nblks = 1024;
 		blklist = (BLK **)calloc(nblks, sizeof(BLK *));
@@ -233,20 +236,23 @@ void blkwrite(buf, blkno)
 	_BLKNO_	blkno;	/* where to write it */
 {
 #ifdef FEATURE_RAM
-	/* store it in RAM */
-	if (nblks > 0)
+	if (SES_IN_RAM)
 	{
-		if (blkno >= nblks)
+		/* store it in RAM */
+		if (nblks > 0)
 		{
-			blklist = (BLK **)realloc(blklist,
+			if (blkno >= nblks)
+			{
+				blklist = (BLK **)realloc(blklist,
 						(nblks + 1024) * sizeof(BLK *));
-			memset(&blklist[nblks], 0, 1024 * sizeof(BLK *));
-			nblks += 1024;
+				memset(&blklist[nblks], 0, 1024 * sizeof(BLK *));
+				nblks += 1024;
+			}
+			if (!blklist[blkno])
+				blklist[blkno] = malloc(o_blksize);
+			memcpy(blklist[blkno], buf, o_blksize);
+			return;
 		}
-		if (!blklist[blkno])
-			blklist[blkno] = malloc(o_blksize);
-		memcpy(blklist[blkno], buf, o_blksize);
-		return;
 	}
 #endif
 
@@ -267,10 +273,13 @@ void blkread(buf, blkno)
 	_BLKNO_	blkno;	/* where to read from */
 {
 #ifdef FEATURE_RAM
-	if (nblks > 0)
+	if (SES_IN_RAM)
 	{
-		memcpy(buf, blklist[blkno], o_blksize);
-		return;
+		if (nblks > 0)
+		{
+			memcpy(buf, blklist[blkno], o_blksize);
+			return;
+		}
 	}
 #endif
 
@@ -289,8 +298,11 @@ void blkread(buf, blkno)
 void blksync()
 {
 #ifdef FEATURE_RAM
-	if (nblks > 0)
-		return;
+	if (SES_IN_RAM)
+	{
+		if (nblks > 0)
+			return;
+	}
 #endif
 
 	sync();
