@@ -7,4 +7,5 @@
 /doc/elvtags.man
 /doc/elvfmt.man
 /src/config.h
+Makefile
 # *~

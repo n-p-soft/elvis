@@ -13,56 +13,17 @@
 VERSION=2.3.0
 DISTRIB=elvis-$(VERSION)
 
-################################################################################
 # This is the name of the compiler, along with any flags that should be used
 # both for compiling and for linking.  Typical values are "cc -g" or "cc -O".
-CC=cc -O -Isrc -fstack-protector-all
+CFLAGS=-Isrc -fstack-protector-all
+CC=cc
 
-################################################################################
 # This macro gives any arguments which will be needed during linking.
 # Mostly, this means "-Llibdir" and "-llib" flags.  If you're compiling with
 # X-windows support, then you'll have to add a "-lX11" and maybe a
 # "-L/usr/X11/lib" flag or something similar.
 LIBS=-ltermcap
 
-################################################################################
-# This should be "unix" for all UNIX variants.  It causes the compiler to use
-# files from the osunix subdirectory, and do a UNIX-style installation.
-OS=unix
-
-################################################################################
-# This is a command for compiling files in a subdirectory, and placing the
-# resultant object files in the current directory.  Most UNIX compilers behave
-# this way naturally, so you probably won't need to modify this.
-OSCC=$(CC) -Isrc $(CFLAGS) $(FLAGC)
-
-################################################################################
-# This is the file name extension for object files.  For UNIX, this is almost
-# always ".o"
-OBJ=.o
-
-################################################################################
-# This is the file name extension for executable files.  For UNIX, this is
-# always a null string because UNIX doesn't use file name extensions to mark
-# executable files.
-EXE=
-
-################################################################################
-# This is the shell command which is used for deleting a file if it exists.
-# The "-f" causes "rm" to be silent if the file doesn't exist.
-RM=rm -f
-
-################################################################################
-# This is the compiler flag which causes compilation but not linking.  For
-# most UNIX compilers, this is "-c".
-FLAGC=-c
-
-################################################################################
-# This is the compiler flag for adding a directory to the list of directories
-# to be searched for #include files.  For most UNIX compilers, this is "-I".
-FLAGI=-I
-
-################################################################################
 # This is a list of programs to be created by "make all".  The possible list
 # includes elvis, ref, ctags, elvtags, and fmt.
 # ctags and elvtags are the same program under different names.  The  on
@@ -71,27 +32,19 @@ FLAGI=-I
 ALLBIN=elvis ref elvtags elvfmt
 ALL=out/elvis out/ref out/elvtags out/elvfmt
 
-################################################################################
-# The installation directories are relative to this
+# The installation directories are relative to these
 DESTDIR=
 PREFIX=/usr/local
-
-################################################################################
-# This is the directory where "make install" will place the executable programs
 BINDIR=$(PREFIX)/bin
-
-################################################################################
-# This is the directory where "make install" will place elvis' support files,
-# such as the help text and the default initialization scripts.  If you change
-# the value here, then you also need to change it in "config.h"
 DATADIR=$(PREFIX)/share/elvis
 DOCDIR= $(PREFIX)/share/elvis/doc
 MANDIR=$(PREFIX)/share/man1
 
-################################################################################
 # Shell commands
 CP=cp
 MKDIR=mkdir -p
+RM=rm -f
+SHELL=/bin/sh
 
 # Portable compilation rules
 MISC=	README.md COPYING Makefile.in configure
@@ -148,8 +101,6 @@ OBJ3=	$(OSOBJS2) src/autocmd.o src/cut.o src/draw.o src/event.o src/ex.o \
 OBJS=	$(OBJ1) $(OBJ2) $(OBJ3)
 REFOBJS= src/ref.o src/tag.o src/tagsrch.o src/safe.o
 CTOBJS=	src/ctags.o src/tag.o src/safe.o
-CFLAGS=	$(FLAGI)src/
-SHELL=	/bin/sh
 
 all: $(ALL)
 

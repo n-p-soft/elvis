@@ -9,13 +9,14 @@
 XINCPATH="/usr/include"
 XLIBPATH="/lib /usr/lib /usr/local/lib "`echo "$LD_LIBRARY_PATH" | tr ':' ' '`
 GNUPATH=`echo "$PATH" | tr ':' ' '`
-PREFIX=/usr
+PREFIX=/usr/local
 BINDIR='$(PREFIX)/bin'
 DATADIR='$(PREFIX)/share/elvis/'
 DOCDIR='$(PREFIX)/share/elvis/doc/'
 MANDIR='$(PREFIX)/share/man/man1/'
 SYS=""
-DEFAULT_CC="cc -O"
+CC=""
+CFLAGS="-O2 -fstack-protector-all -Isrc/"
 IOCTL=""
 WHY=""
 
@@ -31,6 +32,13 @@ why()
 	then
 		echo "$@"
 	fi
+}
+
+# This function exits will a fatal error message
+fatal()
+{
+	echo "FATAL: $@"
+	exit 1
 }
 
 # This function is used to look for a file in a path. $1 is the name of the
@@ -50,10 +58,13 @@ searchpath()
 	done
 }
 
-# This function outputs a usage message, and then exits
+#########################################################
+# This function outputs a usage message, and then exits #
+#########################################################
 usage()
 {
 	echo "usage: configure [options]"
+	echo "       --cc=PATH          use this C compiler"
 	echo "       --bindir=DIR       where to install the executables"
 	echo "       --datadir=DIR      where to install the supporting data files"
 	echo "       --prefix=DIR       like --bindir=DIR/bin --datadir=DIR/share/elvis"
@@ -70,10 +81,17 @@ usage()
 	exit
 }
 
-# Check the arguments
+#######################
+# Check the arguments #
+#######################
+echo "* elvis build configuration *"
 for i
 do
 	case "$i" in
+	  --cc=*)
+		CC=`echo "$i"|sed 's/^--cc=//'`
+		args="$args $i"
+		;;
 	  --bindir=*)
 		BINDIR=`echo "$i"|sed 's/^--bindir=//'`
 		args="$args $i"
@@ -125,17 +143,37 @@ do
 	esac
 done
 
+########################
+# system configuration #
+########################
 case "$(uname)" in
 	*Linux*) SYS=linux ;;
 	*FreeBSD*) SYS=freebsd ;;
 	*OpenBSD*) SYS=openbsd ;;
 	*NetBSD*) SYS=netbsd ;;
 	*BSD*) SYS=bsd ;;
-	*) 
-		why "operating system not supported"
-		exit 1
-		;;
+	*) fatal "operating system not supported" ;;
 esac
+
+# Find a C compiler
+if test -z "$CC"
+then
+	T=$(clang --version 2>/dev/null)
+	if test -n "$T"
+	then
+		CC=clang
+	else
+		T=$(gcc --version 2>/dev/null)
+		if test -n "$T"
+		then
+			CC=gcc
+		fi
+	fi
+fi
+if test -z "$CC"
+then
+	fatal "no C compiler found"
+fi
 
 # Try to locate some files
 why "Looking for some compiler files..."
@@ -143,26 +181,6 @@ inet=`searchpath netinet/in.h $XINCPATH`
 case "$inet" in
   "") why "   Internet headers not found" ;;
   *) why "   Internet headers found" ;;
-esac
-
-case "$CC" in
-  "")	CC="$DEFAULT_CC"
-	case "$gnu" in
-	  y|"")
-		gnu=`searchpath gcc $GNUPATH`
-		case "$gnu" in
-			"") why "   GCC not found" ;;
-			*) why "   GCC found" ;;
-		esac
-		;;
-	  *)
-		why "   GCC not searched for because of --gcc=$gcc argument"
-		;;
-	esac
-	;;
-esac
-case "$gnu" in
- y|n)	gnu="" ;;
 esac
 
 # if network protocols are unspecified, and the network header files are
@@ -185,9 +203,6 @@ then
 	why "Assuming FTP should not be supported because Internet headers were not found"
 	PROTOCOL_FTP=undef
 fi
-
-################################################################################
-
 
 # Check for some known system quirks
 if [ -f /usr/include/sys/ptem.h ]
@@ -383,17 +398,6 @@ then
 	args="$args --libs='$TLIBS'"
 fi
 
-# If "gcc" is available, and CC didn't come from environment variables, then
-# use "gcc" instead of plain old "cc"
-if [ "$gnu" ]
-then
-	why "Assuming GCC should be used because it exists and the $SYS-specific"
-	why "   tweaks didn't indicate that the standard CC is better."
-	CC="gcc -O2"
-fi
-
-################################################################################
-
 # Tell the user what we discovered
 echo "Options: $args"
 echo "System:   $SYS"
@@ -402,8 +406,6 @@ echo "Bin dir:  "`echo "$BINDIR" |sed s,'$(PREFIX)',"$PREFIX",`
 echo "Data dir: "`echo "$DATADIR"|sed s,'$(PREFIX)',"$PREFIX",`
 echo "Doc dir:  "`echo "$DOCDIR" |sed s,'$(PREFIX)',"$PREFIX",`
 echo "Man dir:  "`echo "$MANDIR" |sed s,'$(PREFIX)',"$PREFIX",`
-
-################################################################################
 
 #Set some options that'll be used in the here-files below
 CC="$CC$USE"
@@ -417,10 +419,9 @@ case "$LIBS" in
 esac
 
 
-################################################################################
-
-
-# Generate the "config.h" file
+################################
+# Generate the "config.h" file #
+################################
 ELVISPATH=`echo "~/.elvis:/etc/elvis:$DATADIR:$DOCDIR" | sed s,'$(DATADIR)',"$DATADIR",g\;s,'$(PREFIX)',"$PREFIX",g`
 cat >src/config.h <<eof-config
 /* config.h
@@ -563,36 +564,14 @@ cat >src/config.h <<eof-config
 eof-config
 
 
-################################################################################
-
-
-# Generate a sed script for converting "Makefile.in" to "Makefile"
+####################################################################
+# Generate a sed script for converting "Makefile.in" to "Makefile" #
+####################################################################
 tmp=mfsed.$$
-case "$SYS" in
-
-linux)
-cat >$tmp <<eof-linux
+cat >$tmp <<eof-all
 s!^# Makefile.in\$!# Makefile - configured for $SYS!
 s!^CC=.*!CC=$CC!
-eof-linux
-;;
-
-*bsd*)
-cat >$tmp <<eof-bsd
-s!^# Makefile.in\$!# Makefile - configured for $SYS!
-s!^CC=.*!CC=$CC!
-eof-bsd
-;;
-
-*)
-cat >$tmp <<eof-generic
-s!^# Makefile.in\$!# Makefile - configured for generic Unix!
-s!^CC=.*!CC=$CC!
-eof-generic
-;;
-
-esac
-cat >>$tmp <<eof-all
+s!^CFLAGS=.*!CFLAGS=$CFLAGS!
 s!^LIBS=.*!LIBS=$GNOMELIBS $XLIBS $LIBS!
 s!^PREFIX=.*!PREFIX=$PREFIX!
 s!^BINDIR=.*!BINDIR=$BINDIR!
